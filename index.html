@@ -16,7 +16,6 @@
     .badge { background: var(--red); color: white; font-size: 0.6rem; padding: 2px 5px; border-radius: 8px; display: none; }
     .btns { display: flex; gap: 3px; }
     .ibtn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 4px 7px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; cursor: pointer; }
-    .dbtn { background: rgba(16,185,129,0.2); border-color: var(--green); color: var(--green); }
     .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
     .c-title { font-size: 0.85rem; font-weight: bold; color: var(--primary); display: flex; justify-content: space-between; }
@@ -32,22 +31,13 @@
     .p-head { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--sub); }
     .p-body { background: #05070c; border-radius: 6px; height: 110px; width: 100%; position: relative; overflow: hidden; border: 1px solid rgba(59,130,246,0.2); cursor: pointer; }
     .p-body::after { content: '🔍 拡大'; position: absolute; bottom: 3px; right: 5px; background: rgba(0,0,0,0.6); color: #60a5fa; font-size: 0.6rem; padding: 1px 4px; border-radius: 3px; z-index: 3; }
-    .r-bar { display: flex; gap: 4px; align-items: center; }
-    .r-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; padding: 2px 6px; font-size: 0.7rem; color: var(--text); cursor: pointer; }
     .del { background: none; border: none; color: var(--red); font-size: 0.65rem; font-weight: bold; cursor: pointer; }
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; justify-content: center; align-items: center; padding: 10px; }
     .m-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 480px; max-height: 90vh; display: flex; flex-direction: column; padding: 14px; gap: 10px; }
     .full-modal { width: 100vw !important; height: 100dvh !important; max-width: none !important; max-height: none !important; border-radius: 0 !important; border: none !important; padding: 8px !important; }
     .m-head { font-weight: bold; font-size: 0.9rem; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
     .m-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-    .pin-disp { font-size: 1.8rem; letter-spacing: 0.4em; text-align: center; background: #05070c; padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-family: monospace; }
-    .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 250px; margin: 0 auto; }
-    .kbtn { background: #222d45; border: 1px solid var(--border); color: white; font-size: 1.2rem; font-weight: bold; padding: 12px; border-radius: 10px; cursor: pointer; text-align: center; }
-    .d-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
     .d-inp { background: #05070c; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 6px; font-size: 0.85rem; width: 100%; }
-    .tabs { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px; }
-    .tbtn { background: #222d45; border: 1px solid var(--border); color: var(--sub); padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; cursor: pointer; white-space: nowrap; }
-    .tbtn.active { background: var(--green); color: white; border-color: var(--green); }
     .cal-sec { height: 195px; flex-shrink: 0; }
     .c-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font-size: 0.7rem; flex: 1; }
     .c-head { font-weight: bold; color: var(--sub); }
@@ -62,7 +52,6 @@
     <header>
       <div class="brand">VIL CANVAS <span class="badge" id="gBadge">NEW</span></div>
       <div class="btns">
-        <button class="ibtn dbtn" onclick="openPin()">💰 入金</button>
         <button class="ibtn" onclick="openModal('nameModal')">👤 名前</button>
         <button class="ibtn" onclick="openModal('archModal')">📜 ログ</button>
       </div>
@@ -75,7 +64,6 @@
         <div class="note">ℹ️ 画像は自動で最適化されます。</div>
         <div class="tools">
           <label class="btn" style="cursor:pointer;">📷 画像<input type="file" accept="image/*" style="display:none;" onchange="imgSelect(event)"></label>
-          <button class="btn" id="penBtn" onclick="togglePen()">細め</button>
           <button class="btn" id="eraseBtn" onclick="toggleErase()">消しゴム</button>
           <button class="btn" onclick="openFull()">全画面</button>
           <button class="btn" onclick="clearCvs()">クリア</button>
@@ -110,38 +98,10 @@
     <div class="card full-modal">
       <div class="m-head"><span>⛶ 全画面入力</span><button class="ibtn" onclick="closeFull()">✓ 完了</button></div>
       <div class="c-wrap" id="fWrap" style="flex:1; height:auto;"><img id="fBg" class="bg-img" style="display:none;"><canvas id="fCvs"></canvas></div>
-      <div class="tools"><button class="btn" onclick="clearFull()">クリア</button><button class="sbtn" onclick="closeFull()">完了して反映</button></div>
-    </div>
-  </div>
-
-  <!-- PIN認証用 -->
-  <div class="modal" id="pinModal">
-    <div class="m-card" style="max-width:320px;">
-      <div class="m-head"><span style="color:var(--green);">🔒 入金管理 認証</span><button class="ibtn" onclick="closeModal('pinModal')">✕</button></div>
-      <div class="pin-disp" id="pinStr">----</div>
-      <div class="pad">
-        <button class="kbtn" onclick="pKey('1')">1</button><button class="kbtn" onclick="pKey('2')">2</button><button class="kbtn" onclick="pKey('3')">3</button>
-        <button class="kbtn" onclick="pKey('4')">4</button><button class="kbtn" onclick="pKey('5')">5</button><button class="kbtn" onclick="pKey('6')">6</button>
-        <button class="kbtn" onclick="pKey('7')">7</button><button class="kbtn" onclick="pKey('8')">8</button><button class="kbtn" onclick="pKey('9')">9</button>
-        <button class="kbtn" onclick="pKey('C')" style="color:var(--red); font-size:0.9rem;">C</button><button class="kbtn" onclick="pKey('0')">0</button><button class="kbtn" onclick="pKey('OK')" style="color:var(--green); font-size:0.9rem;">OK</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 入金管理画面用 -->
-  <div class="modal" id="depModal">
-    <div class="card full-modal">
-      <div class="m-head"><span style="color:var(--green);">💰 入金管理 & 担当別ボード</span><button class="ibtn" onclick="closeModal('depModal')">✕</button></div>
-      <div class="m-body">
-        <div class="card" style="border-color:var(--green); background:#0d1322;">
-          <div class="c-title" style="color:var(--green);">＋ 新規入金記録</div>
-          <div class="d-grid"><input type="number" id="dAmt" class="d-inp" placeholder="金額 (例: 15000)"><input type="text" id="dCli" class="d-inp" placeholder="顧客名 / 案件名"></div>
-          <div class="d-grid"><input type="text" id="dStf" class="d-inp" placeholder="担当者名 (例: 山田)"><label class="d-inp" style="text-align:center; background:#222d45; cursor:pointer;">📷 レシート画像<input type="file" accept="image/*" style="display:none;" onchange="dImgSel(event)"></label></div>
-          <div id="dPrevC" style="display:none; height:70px; background:#05070c; border-radius:6px; overflow:hidden;"><img id="dPrev" style="width:100%; height:100%; object-fit:contain;"></div>
-          <button class="btn" style="background:var(--green); color:white;" onclick="dSub()">登録する</button>
-        </div>
-        <div class="tabs" id="dTabs"></div>
-        <div id="dTL" style="display:flex; flex-direction:column; gap:8px;"></div>
+      <div class="tools">
+        <button class="btn" id="fEraseBtn" onclick="toggleFErase()">消しゴム</button>
+        <button class="btn" onclick="clearFull()">クリア</button>
+        <button class="sbtn" onclick="closeFull()">完了して反映</button>
       </div>
     </div>
   </div>
@@ -177,10 +137,9 @@
   <script>
     const GAS = "https://script.google.com/macros/s/AKfycbzzX3-your-gas-url/exec";
     let posts = JSON.parse(localStorage.getItem('V_POSTS')) || [];
-    let deps = JSON.parse(localStorage.getItem('V_DEPS')) || [];
     let events = JSON.parse(localStorage.getItem('V_EVTS')) || [];
-    let imgData = null, dImgData = null, pinStrVal = "", curTab = "すべて";
-    let mCvs, mCtx, fCvs, fCtx, vCvs, vCtx, isDraw = false, history = [], fHistory = [], startT = 0, lineW = 3.5, isErase = false;
+    let imgData = null, startT = 0, isErase = false;
+    let mCvs, mCtx, fCvs, fCtx, vCvs, vCtx, history = [], fHistory = [];
 
     window.onload = () => {
       updAuthor(); initCvs(); renderTL(); renderCal();
@@ -217,27 +176,35 @@
       mCvs = document.getElementById('mCvs'); const wrap = document.getElementById('mWrap');
       mCvs.width = wrap.clientWidth; mCvs.height = wrap.clientHeight; mCtx = mCvs.getContext('2d'); mCtx.lineCap='round';
       
-      const drawEvts = (cvs, ctx, histGetter, histSetter) => {
+      const setupDraw = (cvs, ctx, histGetter) => {
         let drawing = false, stroke = [];
         const pos = e => { const r = cvs.getBoundingClientRect(); const cl = e.touches?e.touches[0].clientX:e.clientX, ct = e.touches?e.touches[0].clientY:e.clientY; return {x:cl-r.left, y:ct-r.top}; };
         cvs.onmousedown = cvs.ontouchstart = e => {
           drawing = true; if(histGetter().length===0) startT=Date.now();
-          const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineWidth=lineW; ctx.strokeStyle=isErase?'#05070c':'#3b82f6';
-          stroke = [{type:'start', x:p.x, y:p.y, t:Date.now()-startT, erase:isErase, w:lineW}];
+          const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); 
+          ctx.lineWidth = isErase ? 12 : 3.5; 
+          ctx.strokeStyle = isErase ? '#05070c' : '#3b82f6';
+          stroke = [{type:'start', x:p.x, y:p.y, t:Date.now()-startT, erase:isErase, w: isErase ? 12 : 3.5}];
         };
         cvs.onmousemove = cvs.ontouchmove = e => {
           if(!drawing) return; e.preventDefault(); const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke();
           stroke.push({type:'move', x:p.x, y:p.y, t:Date.now()-startT});
         };
         cvs.onmouseup = cvs.ontouchend = () => {
-          if(drawing){ drawing=false; if(stroke.length>0) histSetter().push(stroke); }
+          if(drawing){ drawing=false; if(stroke.length>0) histGetter().push(stroke); }
         };
       };
-      drawEvts(mCvs, mCtx, ()=>history, ()=>history);
+      setupDraw(mCvs, mCtx, ()=>history);
     }
 
-    function togglePen() { isErase=false; document.getElementById('eraseBtn').classList.remove('active'); lineW = lineW===3.5?2.0:3.5; document.getElementById('penBtn').classList.toggle('active', lineW===2.0); }
-    function toggleErase() { isErase=!isErase; document.getElementById('eraseBtn').classList.toggle('active', isErase); if(isErase){ document.getElementById('penBtn').classList.remove('active'); lineW=12; }else lineW=3.5; }
+    function toggleErase() {
+      isErase = !isErase;
+      document.getElementById('eraseBtn').classList.toggle('active', isErase);
+      const fBtn = document.getElementById('fEraseBtn');
+      if(fBtn) fBtn.classList.toggle('active', isErase);
+    }
+    function toggleFErase() { toggleErase(); }
+
     function clearCvs() { mCtx.clearRect(0,0,mCvs.width,mCvs.height); history=[]; imgData=null; ['mBg','fBg'].forEach(id=>{let el=document.getElementById(id);if(el){el.src='';el.style.display='none';}}); }
 
     function openFull() {
@@ -247,10 +214,15 @@
         fCvs.width = wrap.clientWidth; fCvs.height = wrap.clientHeight; fCtx = fCvs.getContext('2d'); fCtx.lineCap='round';
         if(imgData){ let el=document.getElementById('fBg'); el.src=imgData; el.style.display='block'; }
         if(fHistory.length>0) playAnim('fCvs', fHistory);
-        //簡易手書き設定
+        
         let drawing=false, stroke=[];
         const pos = e => { const r = fCvs.getBoundingClientRect(); const cl = e.touches?e.touches[0].clientX:e.clientX, ct = e.touches?e.touches[0].clientY:e.clientY; return {x:cl-r.left, y:ct-r.top}; };
-        fCvs.onmousedown = fCvs.ontouchstart = e => { drawing=true; const p=pos(e); fCtx.beginPath(); fCtx.moveTo(p.x,p.y); fCtx.lineWidth=lineW; fCtx.strokeStyle=isErase?'#05070c':'#3b82f6'; stroke=[{type:'start',x:p.x,y:p.y,t:Date.now()-startT,erase:isErase,w:lineW}]; };
+        fCvs.onmousedown = fCvs.ontouchstart = e => { 
+          drawing=true; const p=pos(e); fCtx.beginPath(); fCtx.moveTo(p.x,p.y); 
+          fCtx.lineWidth = isErase ? 12 : 3.5; 
+          fCtx.strokeStyle = isErase ? '#05070c' : '#3b82f6'; 
+          stroke=[{type:'start',x:p.x,y:p.y,t:Date.now()-startT,erase:isErase,w: isErase ? 12 : 3.5}]; 
+        };
         fCvs.onmousemove = fCvs.ontouchmove = e => { if(!drawing)return; e.preventDefault(); const p=pos(e); fCtx.lineTo(p.x,p.y); fCtx.stroke(); stroke.push({type:'move',x:p.x,y:p.y,t:Date.now()-startT}); };
         fCvs.onmouseup = fCvs.ontouchend = () => { if(drawing){ drawing=false; if(stroke.length>0) fHistory.push(stroke); } };
       }, 100);
@@ -267,7 +239,7 @@
       posts.unshift({
         id: 'P_'+Date.now(), ts: now.getTime(), author: uName(), uid: getDevId(),
         time: `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
-        strokes: history, image: imgData, replies: []
+        strokes: history, image: imgData
       });
       saveP(); clearCvs(); renderTL();
     }
@@ -305,7 +277,7 @@
         const my = p.uid === getDevId();
         return `<div class="post">
           <div class="p-head">
-            <span style="font-weight:bold; color:${col=getCol(p.uid)};">${p.author}</span>
+            <span style="font-weight:bold; color:${getCol(p.uid)};">${p.author}</span>
             <div><span style="color:var(--primary); font-weight:bold;">${timeAgo(p.ts)}</span> (${p.time}) ${my?`<button class="del" onclick="delP('${p.id}')">削除</button>`:''}</div>
           </div>
           <div class="p-body" onclick="openView('${p.id}')">
@@ -329,55 +301,6 @@
     }
 
     function delP(id) { if(confirm('削除しますか？')){ posts=posts.filter(x=>x.id!==id); saveP(); renderTL(); } }
-
-    /* PIN & Deposit */
-    function openPin() { pinStrVal=""; updPin(); document.getElementById('pinModal').style.display='flex'; }
-    function pKey(k) {
-      if(k==='C') pinStrVal=""; else if(k==='OK'){
-        if(pinStrVal==='1225'){ closeModal('pinModal'); openDep(); } else { alert('違います'); pinStrVal=""; }
-      } else if(pinStrVal.length<4) pinStrVal+=k;
-      updPin();
-    }
-    function updPin() { let s=""; for(let i=0;i<4;i++) s+=i<pinStrVal.length?'●':'-'; document.getElementById('pinStr').innerText=s; }
-    function openDep() { document.getElementById('depModal').style.display='flex'; renderDTabs(); renderDTL(); }
-
-    function dImgSel(e) {
-      const f=e.target.files[0]; if(!f) return;
-      const r=new FileReader(); r.onload=ev=>{
-        const img=new Image(); img.onload=()=>{
-          const c=document.createElement('canvas'); let w=img.width, h=img.height;
-          if(w>800){h*=800/w;w=800;} c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h);
-          dImgData=c.toDataURL('image/jpeg',0.8);
-          document.getElementById('dPrev').src=dImgData; document.getElementById('dPrevC').style.display='block';
-        }; img.src=ev.target.result;
-      }; r.readAsDataURL(f);
-    }
-
-    function dSub() {
-      const amt=document.getElementById('dAmt').value, cli=document.getElementById('dCli').value, stf=document.getElementById('dStf').value||'未割当';
-      if(!amt||!cli){alert('金額と顧客名を入力');return;}
-      const now=new Date();
-      deps.unshift({ id:'D_'+Date.now(), amt:Number(amt).toLocaleString()+'円', cli, stf, author:uName(), uid:getDevId(), time:`${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`, img:dImgData });
-      localStorage.setItem('V_DEPS', JSON.stringify(deps));
-      document.getElementById('dAmt').value=''; document.getElementById('dCli').value=''; document.getElementById('dStf').value=''; dImgData=null; document.getElementById('dPrevC').style.display='none';
-      renderDTabs(); renderDTL();
-    }
-
-    function renderDTabs() {
-      const staffs = ['すべて', ...new Set(deps.map(d=>d.stf))];
-      document.getElementById('dTabs').innerHTML = staffs.map(s => `<button class="tbtn ${curTab===s?'active':''}" onclick="curTab='${s}';renderDTabs();renderDTL();">${s}</button>`).join('');
-    }
-
-    function renderDTL() {
-      const f = curTab==='すべて'?deps:deps.filter(d=>d.stf===curTab);
-      document.getElementById('dTL').innerHTML = f.length===0?'<p style="color:var(--sub);font-size:0.75rem;">データなし</p>':f.map(d=>`
-        <div class="post" style="border-color:var(--green);">
-          <div class="p-head"><span style="color:var(--green); font-weight:bold;">💰 ${d.amt} (${d.time})</span> ${d.uid===getDevId()?`<button class="del" onclick="delD('${d.id}')">削除</button>`:''}</div>
-          <div style="font-size:0.75rem;">顧客: ${d.cli} / 担当: <strong style="color:var(--primary);">${d.stf}</strong></div>
-          ${d.img?`<div style="height:90px;background:#05070c;border-radius:4px;overflow:hidden;"><img src="${d.img}" style="width:100%;height:100%;object-fit:contain;"></div>`:''}
-        </div>`).join('');
-    }
-    function delD(id) { if(confirm('削除しますか？')){ deps=deps.filter(x=>x.id!==id); localStorage.setItem('V_DEPS', JSON.stringify(deps)); renderDTabs(); renderDTL(); } }
 
     /* Calendar */
     function renderCal() {
