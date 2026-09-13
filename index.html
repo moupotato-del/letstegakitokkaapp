@@ -87,9 +87,9 @@
       overflow: hidden; height: 180px; width: 100%; display: flex; justify-content: center; align-items: center;
     }
     canvas { touch-action: none; cursor: crosshair; width: 100%; height: 100%; position: absolute; inset: 0; z-index: 2; }
-    .bg-image-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; opacity: 0.8; }
+    .bg-image-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; opacity: 0.9; pointer-events: none; }
 
-    /* ツールバー ＆ 右下大きめ送信ボタン */
+    /* Tools */
     .canvas-tools { display: flex; gap: 6px; justify-content: space-between; align-items: center; flex-wrap: nowrap; }
     .btn-action {
       background: #222d45; color: var(--text); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; font-weight: bold; font-size: 0.8rem; cursor: pointer;
@@ -100,7 +100,7 @@
     }
     .btn-submit-lg:active { transform: scale(0.97); }
 
-    /* BBS Post Cards */
+    /* BBS Cards */
     .post-card {
       background: #0d1322; border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px;
     }
@@ -115,7 +115,7 @@
       background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 2px 8px; font-size: 0.75rem; color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 4px;
     }
 
-    /* コメント・スレッド (サイズ固定・文字膨らみガード) */
+    /* Comments */
     .toggle-reply-btn {
       background: none; border: none; color: var(--reply-blue); font-size: 0.75rem; font-weight: bold; cursor: pointer; margin-top: 4px; text-align: left; display: flex; align-items: center; gap: 4px;
     }
@@ -123,7 +123,14 @@
       display: none; margin-top: 6px; padding-left: 10px; border-left: 2px solid var(--reply-blue); flex-direction: column; gap: 6px;
     }
     .replies-container.open { display: flex; }
-    .reply-item { background: #151c2c; padding: 6px 8px; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(59, 130, 246, 0.2); word-break: break-all; }
+    .reply-item { background: #151c2c; padding: 6px 8px; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(59, 130, 246, 0.3); color: var(--reply-blue); word-break: break-all; }
+    .reply-header { display: flex; justify-content: space-between; align-items: center; }
+    .reply-text-content { color: #60a5fa; margin-top: 2px; }
+
+    .del-btn-sm {
+      background: none; border: none; color: var(--accent-red); font-size: 0.7rem; font-weight: bold; cursor: pointer; opacity: 0.8; padding: 2px 4px;
+    }
+    .del-btn-sm:hover { opacity: 1; text-decoration: underline; }
 
     /* Modals */
     .modal-overlay {
@@ -136,6 +143,12 @@
     }
     .modal-header { font-weight: bold; font-size: 1rem; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
     .modal-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+
+    /* 全画面大画面入力モーダル */
+    #fullscreenDrawModal .modal-card {
+      width: 100vw; height: 100dvh; max-width: 100vw; max-height: 100dvh; border-radius: 0; border: none; padding: 12px;
+    }
+    #fullscreenCanvasContainer { flex: 1; height: 100%; width: 100%; }
 
     /* Calendar Base */
     .calendar-section { height: 210px; flex-shrink: 0; }
@@ -171,7 +184,7 @@
     </header>
 
     <div class="main-content">
-      <!-- 1. 新規手書き作成カード (右下に大きめ投稿ボタン) -->
+      <!-- 1. 新規手書き作成カード -->
       <section class="section-card">
         <div class="section-title">
           <span>✍️ メッセージ・写真メモ</span>
@@ -186,13 +199,14 @@
             📷 画像
             <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
           </label>
+          <button class="btn-action" onclick="openFullscreenDraw()">⛶ 全画面入力</button>
           <button class="btn-action" onclick="clearMainCanvas()">クリア</button>
           <button class="btn-action" onclick="replayMainCanvas()">▶ プレビュー</button>
           <button class="btn-submit-lg" onclick="submitMainPost()">投稿（送信）</button>
         </div>
       </section>
 
-      <!-- 2. タイムライン (直近7件表示) -->
+      <!-- 2. タイムライン (最新7件表示) -->
       <section class="section-card">
         <div class="section-title">
           <span>💬 掲示板タイムライン</span>
@@ -216,7 +230,27 @@
     </div>
   </div>
 
-  <!-- モーダル0: 名前変更 -->
+  <!-- モーダル0: 全画面大画面入力モーダル -->
+  <div class="modal-overlay" id="fullscreenDrawModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span>⛶ 大画面手書き入力</span>
+        <button class="icon-btn" onclick="closeFullscreenDraw()">✓ 完了して戻る</button>
+      </div>
+      <div class="modal-body" style="padding:0;">
+        <div class="canvas-wrapper" id="fullscreenCanvasContainer">
+          <img id="fsBgImage" class="bg-image-preview" style="display:none;">
+          <canvas id="fsCanvas"></canvas>
+        </div>
+      </div>
+      <div class="canvas-tools" style="padding-top:8px;">
+        <button class="btn-action" onclick="clearFsCanvas()">クリア</button>
+        <button class="btn-submit-lg" onclick="closeFullscreenDraw()">画面を反映して完了</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル1: 名前変更 -->
   <div class="modal-overlay" id="nameModal">
     <div class="modal-card" style="max-width:360px;">
       <div class="modal-header">
@@ -224,14 +258,14 @@
         <button class="icon-btn" onclick="closeModal('nameModal')">✕ 閉じる</button>
       </div>
       <div class="modal-body">
-        <div style="font-size:0.8rem; color:var(--sub-text);">表示される名前を設定できます（端末固有IDは自動付与されます）。</div>
+        <div style="font-size:0.8rem; color:var(--sub-text);">名前を変更すると、過去のあなたの全投稿・コメントの表示名も自動変更されます。</div>
         <input type="text" id="nameInput" placeholder="名前を入力してください" style="background:#05070c; border:1px solid var(--border); color:white; padding:10px; border-radius:8px; font-size:0.9rem;">
-        <button class="btn-action primary" onclick="saveNameSetting()" style="width:100%;">保存する</button>
+        <button class="btn-action primary" onclick="saveNameSetting()" style="width:100%;">一括変更して保存</button>
       </div>
     </div>
   </div>
 
-  <!-- モーダル1: 過去ログ -->
+  <!-- モーダル2: 過去ログ -->
   <div class="modal-overlay" id="archiveModal">
     <div class="modal-card">
       <div class="modal-header">
@@ -242,7 +276,7 @@
     </div>
   </div>
 
-  <!-- モーダル2: 予定追加 / 削除 -->
+  <!-- モーダル3: 予定追加 / 削除 -->
   <div class="modal-overlay" id="eventModal">
     <div class="modal-card">
       <div class="modal-header">
@@ -262,26 +296,27 @@
     </div>
   </div>
 
-  <!-- モーダル3: 返信 -->
+  <!-- モーダル4: 返信 -->
   <div class="modal-overlay" id="replyDrawModal">
     <div class="modal-card">
       <div class="modal-header">
-        <span>💬 コメント返信</span>
+        <span style="color:var(--reply-blue);">💬 返信コメント作成</span>
         <button class="icon-btn" onclick="closeModal('replyDrawModal')">✕ 閉じる</button>
       </div>
       <div class="modal-body">
         <div style="display:flex; gap:6px;">
-          <input type="text" id="replyTextInput" placeholder="コメントを入力 (文字)" style="flex:1; background:#05070c; border:1px solid var(--border); color:white; padding:8px; border-radius:6px; font-size:0.85rem;">
-          <button class="btn-action primary" onclick="submitTextReply()">送信</button>
+          <input type="text" id="replyTextInput" placeholder="コメントを入力 (文字)" style="flex:1; background:#05070c; border:1px solid var(--reply-blue); color:#60a5fa; padding:8px; border-radius:6px; font-size:0.85rem;">
+          <button class="btn-action" style="background:var(--reply-blue); color:white; border:none;" onclick="submitTextReply()">送信</button>
         </div>
         <hr style="border:none; border-top:1px solid var(--border); margin:4px 0;">
-        <div style="font-size:0.8rem; color:var(--sub-text);">または手書きで返信:</div>
-        <div class="canvas-wrapper" id="replyCanvasContainer" style="height:130px; position:relative;">
+        <div style="font-size:0.8rem; color:var(--reply-blue); font-weight:bold;">または手書きで返信 (ブルー描画):</div>
+        <div class="canvas-wrapper" id="replyCanvasContainer" style="height:130px; position:relative; border-color:var(--reply-blue);">
           <canvas id="replyCanvas"></canvas>
         </div>
         <div class="canvas-tools">
           <button class="btn-action" onclick="clearReplyCanvas()">クリア</button>
-          <button class="btn-submit-lg" style="padding:8px 16px; font-size:0.85rem;" onclick="submitReplyDraw()">手書き返信を送信</button>
+          <button class="btn-action" style="background:var(--reply-blue); color:white; border:none;" onclick="replayReplyCanvas()">▶ プレビュー</button>
+          <button class="btn-submit-lg" style="background:var(--reply-blue); color:white; padding:8px 16px; font-size:0.85rem;" onclick="submitReplyDraw()">手書き返信を送信</button>
         </div>
       </div>
     </div>
@@ -339,18 +374,33 @@
     function saveNameSetting() {
       const input = document.getElementById('nameInput').value.trim();
       const newName = input || '名無し';
+      const myId = getOrCreateDeviceId();
+
       localStorage.setItem('VIL_USER_NAME', newName);
+
+      posts.forEach(p => {
+        if (p.userId === myId) p.author = newName;
+        if (p.replies) {
+          p.replies.forEach(r => {
+            if (r.userId === myId) r.author = newName;
+          });
+        }
+      });
+
+      saveLocalPosts();
       updateAuthorDisplay();
+      renderTimeline();
       closeModal('nameModal');
     }
 
-    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V6')) || [];
+    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V11')) || [];
     let events = JSON.parse(localStorage.getItem('VIL_CANVAS_EVENTS')) || [];
     let activeReplyPostId = null;
     let activeAnimTimers = {};
     let attachedImageData = null;
 
     let mainCanvas, mainCtx, isDrawing = false, currentStroke = [], mainHistory = [], startTime = 0;
+    let fsCanvas, fsCtx, isFsDrawing = false, currentFsStroke = [];
     let replyCanvas, replyCtx, isReplyDrawing = false, currentReplyStroke = [], replyHistory = [], replyStartTime = 0;
 
     window.onload = function() {
@@ -371,6 +421,10 @@
         const bgImg = document.getElementById('mainBgImage');
         bgImg.src = attachedImageData;
         bgImg.style.display = 'block';
+
+        const fsBg = document.getElementById('fsBgImage');
+        fsBg.src = attachedImageData;
+        fsBg.style.display = 'block';
       };
       reader.readAsDataURL(file);
     }
@@ -418,18 +472,85 @@
       mainCanvas.addEventListener('touchstart', startDraw); mainCanvas.addEventListener('touchmove', moveDraw); mainCanvas.addEventListener('touchend', endDraw);
     }
 
+    /* --- 大画面全画面入力機能 --- */
+    function openFullscreenDraw() {
+      document.getElementById('fullscreenDrawModal').style.display = 'flex';
+      setTimeout(initFullscreenCanvas, 150);
+    }
+
+    function initFullscreenCanvas() {
+      const container = document.getElementById('fullscreenCanvasContainer');
+      fsCanvas = document.getElementById('fsCanvas');
+      fsCanvas.width = container.clientWidth;
+      fsCanvas.height = container.clientHeight;
+
+      fsCtx = fsCanvas.getContext('2d');
+      fsCtx.lineWidth = 4; fsCtx.lineCap = 'round'; fsCtx.strokeStyle = '#10b981';
+
+      if (mainHistory.length > 0) {
+        playStrokeAnimation('fsCanvas', mainHistory, '#10b981');
+      }
+
+      function getPos(e) {
+        const rect = fsCanvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+      }
+
+      function start(e) {
+        isFsDrawing = true;
+        if (mainHistory.length === 0) startTime = Date.now();
+        const pos = getPos(e);
+        fsCtx.beginPath(); fsCtx.moveTo(pos.x, pos.y);
+        currentFsStroke = [{ type: 'start', x: pos.x, y: pos.y, t: Date.now() - startTime }];
+      }
+
+      function move(e) {
+        if (!isFsDrawing) return;
+        e.preventDefault();
+        const pos = getPos(e);
+        fsCtx.lineTo(pos.x, pos.y); fsCtx.stroke();
+        currentFsStroke.push({ type: 'move', x: pos.x, y: pos.y, t: Date.now() - startTime });
+      }
+
+      function end() {
+        if (isFsDrawing) {
+          isFsDrawing = false;
+          if (currentFsStroke.length > 0) mainHistory.push(currentFsStroke);
+        }
+      }
+
+      fsCanvas.addEventListener('mousedown', start); fsCanvas.addEventListener('mousemove', move); fsCanvas.addEventListener('mouseup', end);
+      fsCanvas.addEventListener('touchstart', start); fsCanvas.addEventListener('touchmove', move); fsCanvas.addEventListener('touchend', end);
+    }
+
+    function clearFsCanvas() {
+      if (fsCtx) fsCtx.clearRect(0, 0, fsCanvas.width, fsCanvas.height);
+      clearMainCanvas();
+    }
+
+    function closeFullscreenDraw() {
+      closeModal('fullscreenDrawModal');
+      if (mainHistory.length > 0) {
+        playStrokeAnimation('mainCanvas', mainHistory, '#10b981');
+      }
+    }
+
     function clearMainCanvas() {
       mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
       mainHistory = [];
       attachedImageData = null;
       const bgImg = document.getElementById('mainBgImage');
       bgImg.src = ''; bgImg.style.display = 'none';
+      const fsBg = document.getElementById('fsBgImage');
+      fsBg.src = ''; fsBg.style.display = 'none';
       document.getElementById('imageInput').value = '';
     }
 
     function replayMainCanvas() {
       if (mainHistory.length === 0) return;
-      playStrokeAnimation('mainCanvas', mainHistory);
+      playStrokeAnimation('mainCanvas', mainHistory, '#10b981');
     }
 
     function submitMainPost() {
@@ -455,14 +576,14 @@
       renderTimeline();
     }
 
-    function playStrokeAnimation(canvasId, strokeHistory) {
+    function playStrokeAnimation(canvasId, strokeHistory, strokeColor = '#10b981') {
       const cvs = document.getElementById(canvasId);
       if (!cvs) return;
       const c = cvs.getContext('2d');
       if (activeAnimTimers[canvasId]) cancelAnimationFrame(activeAnimTimers[canvasId]);
 
       c.clearRect(0, 0, cvs.width, cvs.height);
-      c.lineWidth = 3.5; c.lineCap = 'round'; c.strokeStyle = '#10b981';
+      c.lineWidth = 3.5; c.lineCap = 'round'; c.strokeStyle = strokeColor;
 
       let allPoints = [];
       strokeHistory.forEach(s => { allPoints = allPoints.concat(s); });
@@ -486,9 +607,29 @@
       activeAnimTimers[canvasId] = requestAnimationFrame(step);
     }
 
+    function deleteMyPost(postId) {
+      if (confirm('この投稿を削除しますか？')) {
+        posts = posts.filter(p => p.id !== postId);
+        saveLocalPosts();
+        renderTimeline();
+      }
+    }
+
+    function deleteMyReply(postId, replyId) {
+      if (confirm('このコメントを削除しますか？')) {
+        const targetPost = posts.find(p => p.id === postId);
+        if (targetPost && targetPost.replies) {
+          targetPost.replies = targetPost.replies.filter(r => r.id !== replyId);
+          saveLocalPosts();
+          renderTimeline();
+        }
+      }
+    }
+
     function renderTimeline() {
       const container = document.getElementById('timelineContainer');
       const recentPosts = posts.slice(0, 7);
+      const myId = getOrCreateDeviceId();
 
       if (recentPosts.length === 0) {
         container.innerHTML = '<p style="color:var(--sub-text); font-size:0.8rem;">まだ投稿がありません。</p>';
@@ -499,24 +640,40 @@
         const canvasId = 'postCvs_' + post.id;
         const repliesCount = (post.replies || []).length;
         const userColor = generateVisibleColor(post.userId || 'GUEST');
+        const isMyPost = post.userId === myId;
 
         let repliesHtml = (post.replies || []).map(r => {
           const rColor = generateVisibleColor(r.userId || 'GUEST');
+          const isMyReply = r.userId === myId;
+          const delReplyBtn = isMyReply ? `<button class="del-btn-sm" onclick="deleteMyReply('${post.id}', '${r.id}')">削除</button>` : '';
+
           if (r.strokes) {
             const rCvsId = 'replyCvs_' + r.id;
-            setTimeout(() => playStrokeAnimation(rCvsId, r.strokes), 100);
+            setTimeout(() => playStrokeAnimation(rCvsId, r.strokes, '#3b82f6'), 100);
             return `<div class="reply-item">
-              <div style="font-size:0.75rem;"><strong style="color:${rColor};">${r.author}</strong><span class="user-id-badge" style="color:${rColor};">(${r.userId || 'GUEST'})</span> • <span style="color:var(--sub-text);">${r.time}</span></div>
-              <div style="height:70px; width:100%; position:relative; background:#05070c; border-radius:4px; margin-top:4px; overflow:hidden;">
+              <div class="reply-header">
+                <span style="font-size:0.75rem;"><strong style="color:${rColor};">${r.author}</strong><span class="user-id-badge" style="color:${rColor};">(${r.userId || 'GUEST'})</span> • <span style="color:var(--sub-text);">${r.time}</span></span>
+                ${delReplyBtn}
+              </div>
+              <div style="height:70px; width:100%; position:relative; background:#05070c; border-radius:4px; margin-top:4px; overflow:hidden; border:1px solid var(--reply-blue);">
                 <canvas id="${rCvsId}"></canvas>
               </div>
             </div>`;
           } else {
-            return `<div class="reply-item"><strong style="color:${rColor};">${r.author}</strong><span class="user-id-badge" style="color:${rColor};">(${r.userId || 'GUEST'})</span>: <span style="color:#93c5fd;">${r.text}</span> <span style="font-size:0.65rem; color:var(--sub-text);">(${r.time})</span></div>`;
+            return `<div class="reply-item">
+              <div class="reply-header">
+                <span style="font-size:0.75rem;"><strong style="color:${rColor};">${r.author}</strong><span class="user-id-badge" style="color:${rColor};">(${r.userId || 'GUEST'})</span> <span style="font-size:0.65rem; color:var(--sub-text);">(${r.time})</span></span>
+                ${delReplyBtn}
+              </div>
+              <div class="reply-text-content">${r.text}</div>
+            </div>`;
           }
         }).join('');
 
-        setTimeout(() => playStrokeAnimation(canvasId, post.strokes), 100);
+        setTimeout(() => playStrokeAnimation(canvasId, post.strokes, '#10b981'), 100);
+
+        const shouldCollapse = repliesCount >= 3;
+        const delPostBtn = isMyPost ? `<button class="del-btn-sm" onclick="deleteMyPost('${post.id}')">削除</button>` : '';
 
         return `
           <div class="post-card">
@@ -524,7 +681,10 @@
               <span class="author-tag" style="color:${userColor};">
                 ${post.author}<span class="user-id-badge" style="color:${userColor};">(${post.userId || 'GUEST'})</span>
               </span>
-              <span>${post.time}</span>
+              <div>
+                <span style="margin-right:6px;">${post.time}</span>
+                ${delPostBtn}
+              </div>
             </div>
             <div class="post-body">
               ${post.image ? `<img src="${post.image}" class="bg-image-preview">` : ''}
@@ -535,14 +695,14 @@
               <button class="react-btn" onclick="addReaction('${post.id}', '👌')">👌 ${post.reactions ? (post.reactions['👌'] || 0) : 0}</button>
               <button class="react-btn" onclick="addReaction('${post.id}', '🙏')">🙏 ${post.reactions ? (post.reactions['🙏'] || 0) : 0}</button>
               <button class="react-btn" onclick="triggerReplay('${post.id}')">▶ 再生</button>
-              <button class="react-btn" style="color:var(--reply-blue);" onclick="openReplyModal('${post.id}')">💬 返信</button>
+              <button class="react-btn" style="color:var(--reply-blue); border-color:var(--reply-blue);" onclick="openReplyModal('${post.id}')">💬 返信</button>
             </div>
             
             ${repliesCount > 0 ? `
               <button class="toggle-reply-btn" onclick="toggleReplies('${post.id}')">
-                💬 コメントを見る (${repliesCount}件) ▼
+                💬 コメントを見る (${repliesCount}件) ${shouldCollapse ? '▼' : '▲'}
               </button>
-              <div class="replies-container" id="replies_${post.id}">
+              <div class="replies-container ${shouldCollapse ? '' : 'open'}" id="replies_${post.id}">
                 ${repliesHtml}
               </div>
             ` : ''}
@@ -558,7 +718,7 @@
 
     function triggerReplay(postId) {
       const target = posts.find(p => p.id === postId);
-      if (target) playStrokeAnimation('postCvs_' + postId, target.strokes);
+      if (target) playStrokeAnimation('postCvs_' + postId, target.strokes, '#10b981');
     }
 
     function addReaction(postId, emoji) {
@@ -594,7 +754,10 @@
         saveLocalPosts();
         closeModal('replyDrawModal');
         renderTimeline();
-        setTimeout(() => { toggleReplies(activeReplyPostId); }, 150);
+        setTimeout(() => {
+          const el = document.getElementById('replies_' + activeReplyPostId);
+          if (el) el.classList.add('open');
+        }, 150);
       }
     }
 
@@ -646,6 +809,11 @@
       replyHistory = [];
     }
 
+    function replayReplyCanvas() {
+      if (replyHistory.length === 0) return;
+      playStrokeAnimation('replyCanvas', replyHistory, '#3b82f6');
+    }
+
     function submitReplyDraw() {
       if (replyHistory.length === 0) return;
       const target = posts.find(p => p.id === activeReplyPostId);
@@ -662,7 +830,10 @@
         closeModal('replyDrawModal');
         clearReplyCanvas();
         renderTimeline();
-        setTimeout(() => { toggleReplies(activeReplyPostId); }, 150);
+        setTimeout(() => {
+          const el = document.getElementById('replies_' + activeReplyPostId);
+          if (el) el.classList.add('open');
+        }, 150);
       }
     }
 
@@ -670,6 +841,7 @@
       document.getElementById('archiveModal').style.display = 'flex';
       const container = document.getElementById('archiveContainer');
       const archivePosts = posts.slice(7);
+      const myId = getOrCreateDeviceId();
 
       if (archivePosts.length === 0) {
         container.innerHTML = '<p style="color:var(--sub-text); font-size:0.8rem;">8件目以降の過去投稿はまだありません。</p>';
@@ -679,12 +851,18 @@
       container.innerHTML = archivePosts.map((post) => {
         const canvasId = 'archCvs_' + post.id;
         const userColor = generateVisibleColor(post.userId || 'GUEST');
-        setTimeout(() => playStrokeAnimation(canvasId, post.strokes), 100);
+        const isMyPost = post.userId === myId;
+        const delPostBtn = isMyPost ? `<button class="del-btn-sm" onclick="deleteMyPost('${post.id}')">削除</button>` : '';
+
+        setTimeout(() => playStrokeAnimation(canvasId, post.strokes, '#10b981'), 100);
         return `
           <div class="post-card">
             <div class="post-header">
               <strong style="color:${userColor};">${post.author}<span class="user-id-badge" style="color:${userColor};">(${post.userId || 'GUEST'})</span></strong>
-              <span>${post.time}</span>
+              <div>
+                <span style="margin-right:6px;">${post.time}</span>
+                ${delPostBtn}
+              </div>
             </div>
             <div class="post-body">
               ${post.image ? `<img src="${post.image}" class="bg-image-preview">` : ''}
@@ -787,7 +965,7 @@
     }
 
     function saveLocalPosts() {
-      localStorage.setItem('VIL_CANVAS_POSTS_V6', JSON.stringify(posts));
+      localStorage.setItem('VIL_CANVAS_POSTS_V11', JSON.stringify(posts));
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
@@ -809,3 +987,4 @@
   </script>
 </body>
 </html>
+
