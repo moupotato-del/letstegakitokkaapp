@@ -87,7 +87,7 @@
       overflow: hidden; height: 180px; width: 100%; display: flex; justify-content: center; align-items: center;
     }
     canvas { touch-action: none; cursor: crosshair; width: 100%; height: 100%; position: absolute; inset: 0; z-index: 2; }
-    .bg-image-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; opacity: 0.9; pointer-events: none; }
+    .bg-image-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; opacity: 0.95; pointer-events: none; }
 
     /* Tools */
     .canvas-tools { display: flex; gap: 6px; justify-content: space-between; align-items: center; flex-wrap: nowrap; }
@@ -100,7 +100,7 @@
     }
     .btn-submit-lg:active { transform: scale(0.97); }
 
-    /* BBS Cards (ブルー基調) */
+    /* BBS Cards */
     .post-card {
       background: #0d1322; border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px;
     }
@@ -147,7 +147,6 @@
     .modal-header { font-weight: bold; font-size: 1rem; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
     .modal-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 
-    /* 全画面モーダル各種 */
     #fullscreenDrawModal .modal-card,
     #viewPostModal .modal-card {
       width: 100vw; height: 100dvh; max-width: 100vw; max-height: 100dvh; border-radius: 0; border: none; padding: 12px;
@@ -199,8 +198,8 @@
           <canvas id="mainCanvas"></canvas>
         </div>
         <div class="canvas-tools">
-          <label class="btn-action" style="cursor:pointer;">
-            📷 画像
+          <label class="btn-action" style="cursor:pointer; display:flex; align-items:center; gap:4px;">
+            📷 画像を選択
             <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
           </label>
           <button class="btn-action" onclick="openFullscreenDraw()">⛶ 全画面入力</button>
@@ -234,7 +233,7 @@
     </div>
   </div>
 
-  <!-- モーダル0: 投稿フル画面閲覧モーダル -->
+  <!-- モーダル0: 投稿フル画面拡大閲覧モーダル -->
   <div class="modal-overlay" id="viewPostModal">
     <div class="modal-card">
       <div class="modal-header">
@@ -417,7 +416,7 @@
       closeModal('nameModal');
     }
 
-    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V13')) || [];
+    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V14')) || [];
     let events = JSON.parse(localStorage.getItem('VIL_CANVAS_EVENTS')) || [];
     let activeReplyPostId = null;
     let activeAnimTimers = {};
@@ -435,6 +434,7 @@
       setInterval(autoSyncData, 5000);
     };
 
+    /* --- 画像選択・FileReader処理の堅牢化 --- */
     function handleImageSelect(e) {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
@@ -454,6 +454,9 @@
           fsBg.src = attachedImageData;
           fsBg.style.display = 'block';
         }
+      };
+      reader.onerror = function() {
+        alert('画像の読み込みに失敗しました。');
       };
       reader.readAsDataURL(file);
     }
@@ -565,7 +568,6 @@
       }
     }
 
-    /* --- 投稿タップ時の大画面拡大閲覧機能 --- */
     function openViewPostModal(postId) {
       const target = posts.find(p => p.id === postId);
       if (!target) return;
@@ -634,7 +636,6 @@
       renderTimeline();
     }
 
-    /* --- 全アニメーションをブルー（#3b82f6）に統一 --- */
     function playStrokeAnimation(canvasId, strokeHistory, strokeColor = '#3b82f6') {
       const cvs = document.getElementById(canvasId);
       if (!cvs) return;
@@ -1024,7 +1025,7 @@
     }
 
     function saveLocalPosts() {
-      localStorage.setItem('VIL_CANVAS_POSTS_V13', JSON.stringify(posts));
+      localStorage.setItem('VIL_CANVAS_POSTS_V14', JSON.stringify(posts));
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
