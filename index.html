@@ -145,16 +145,6 @@
     </div>
   </div>
 
-  <!-- ポップアップモーダル -->
-  <div class="modal" id="popupModal">
-    <div class="m-card" style="max-width:300px; text-align:center; padding:20px;">
-      <div style="font-size:1.5rem; margin-bottom:5px;">🧹</div>
-      <div style="font-weight:bold; font-size:1rem; margin-bottom:10px;">消しゴム4回タッチ！</div>
-      <div style="font-size:0.8rem; color:var(--sub); margin-bottom:15px;">消しゴムボタンが3秒間点滅します。</div>
-      <button class="btn" style="background:var(--primary); color:white; width:100%;" onclick="closeModal('popupModal')">閉じる</button>
-    </div>
-  </div>
-
   <!-- 名前変更 -->
   <div class="modal" id="nameModal">
     <div class="m-card" style="max-width:320px;">
@@ -283,7 +273,7 @@
         eraseClickCount++;
         if (eraseClickCount === 4) {
           eraseClickCount = 0;
-          triggerEraseBlinkAndPopup();
+          triggerEraseBlink();
         }
       }
 
@@ -294,11 +284,7 @@
     }
     function toggleFErase() { toggleErase(); }
 
-    function triggerEraseBlinkAndPopup() {
-      // ポップアップ表示
-      document.getElementById('popupModal').style.display = 'flex';
-      
-      // 3秒間ボタンを点滅させる
+    function triggerEraseBlink() {
       const eBtn = document.getElementById('eraseBtn');
       const fBtn = document.getElementById('fEraseBtn');
       
@@ -530,4 +516,3 @@
   </script>
 </body>
 </html>
-
