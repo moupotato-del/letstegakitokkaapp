@@ -16,6 +16,7 @@
       --sub-text: #9ca3af;
       --border: #2a354d;
       --accent-red: #ef4444;
+      --reply-blue: #3b82f6;
     }
 
     * {
@@ -36,7 +37,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
 
-    /* Splash Screen (2.2秒) */
+    /* Splash Screen */
     #splash {
       position: fixed; inset: 0;
       background: radial-gradient(circle at center, #1a263d 0%, #080b12 100%);
@@ -57,7 +58,6 @@
       display: flex; flex-direction: column; height: 100dvh; max-width: 600px; margin: 0 auto; padding: 10px; gap: 10px;
     }
 
-    /* Header */
     header {
       display: flex; justify-content: space-between; align-items: center; padding: 2px 4px; flex-shrink: 0;
     }
@@ -71,28 +71,27 @@
     .header-btns { display: flex; gap: 6px; align-items: center; }
     .icon-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 14px; font-size: 0.75rem; cursor: pointer; font-weight: bold; }
 
-    /* Main Scroll Area */
     .main-content {
       flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 12px; min-height: 0; padding-right: 2px;
     }
 
-    /* Card Section Base */
     .section-card {
       background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 14px; padding: 12px;
       display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.25);
     }
     .section-title { font-size: 0.92rem; font-weight: bold; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
 
-    /* Canvas Drawing Area */
+    /* Canvas & Image Wrapper */
     .canvas-wrapper {
       position: relative; background: #05070c; border-radius: 10px; border: 1px solid var(--border);
       overflow: hidden; height: 180px; display: flex; justify-content: center; align-items: center;
     }
-    canvas { touch-action: none; cursor: crosshair; width: 100%; height: 100%; }
+    canvas { touch-action: none; cursor: crosshair; width: 100%; height: 100%; position: absolute; inset: 0; z-index: 2; }
+    .bg-image-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; opacity: 0.8; }
 
-    .canvas-tools { display: flex; gap: 8px; justify-content: space-between; align-items: center; }
+    .canvas-tools { display: flex; gap: 6px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
     .btn-action {
-      background: #222d45; color: var(--text); border: 1px solid var(--border); padding: 8px 14px; border-radius: 8px; font-weight: bold; font-size: 0.82rem; cursor: pointer;
+      background: #222d45; color: var(--text); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; font-weight: bold; font-size: 0.8rem; cursor: pointer;
     }
     .btn-action.primary { background: var(--primary); color: #05070c; border: none; }
 
@@ -101,15 +100,24 @@
       background: #0d1322; border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px;
     }
     .post-header { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--sub-text); }
-    .post-body { background: #05070c; border-radius: 8px; padding: 6px; overflow: hidden; }
+    .post-body { background: #05070c; border-radius: 8px; padding: 6px; overflow: hidden; position: relative; height: 130px; }
     
     .reaction-bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
     .react-btn {
       background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 2px 8px; font-size: 0.75rem; color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 4px;
     }
 
-    .replies-container { margin-top: 6px; padding-left: 10px; border-left: 2px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
-    .reply-item { background: #151c2c; padding: 6px 8px; border-radius: 6px; font-size: 0.8rem; }
+    /* 折りたたみコメント・スレッド */
+    .toggle-reply-btn {
+      background: none; border: none; color: var(--reply-blue); font-size: 0.75rem; font-weight: bold; cursor: pointer; margin-top: 4px; text-align: left; display: flex; align-items: center; gap: 4px;
+    }
+    .replies-container {
+      display: none; margin-top: 6px; padding-left: 10px; border-left: 2px solid var(--reply-blue); flex-direction: column; gap: 6px;
+    }
+    .replies-container.open { display: flex; }
+    .reply-item { background: #151c2c; padding: 6px 8px; border-radius: 6px; font-size: 0.8rem; color: var(--reply-blue); border: 1px solid rgba(59, 130, 246, 0.2); }
+    .reply-item strong { color: #93c5fd; }
+    .reply-item span { color: var(--sub-text); }
 
     /* Modals */
     .modal-overlay {
@@ -141,7 +149,7 @@
   <div id="splash">
     <div class="splash-icon">✍️</div>
     <div class="splash-logo">CANVAS</div>
-    <div class="splash-sub">Handwriting & Message</div>
+    <div class="splash-sub">Handwriting & Photo Note</div>
   </div>
 
   <div class="app-container">
@@ -151,32 +159,37 @@
       </div>
       <div class="header-btns">
         <button class="icon-btn" onclick="requestNotificationPermission()">🔔 通知ON</button>
-        <button class="icon-btn" onclick="openArchiveModal()">📜 過去ログ</button>
+        <button class="icon-btn" onclick="openArchiveModal()">📜 8件以前の過去ログ</button>
       </div>
     </header>
 
     <div class="main-content">
-      <!-- 1. 新規手書き作成カード -->
+      <!-- 1. 新規手書き作成カード (画像添付機能付き) -->
       <section class="section-card">
         <div class="section-title">
-          <span>✍️ メッセージを書く</span>
+          <span>✍️ メッセージ・写真メモ</span>
           <input type="text" id="authorName" placeholder="名前 (任意)" style="background:#05070c; border:1px solid var(--border); color:white; padding:2px 8px; border-radius:6px; font-size:0.75rem; width:100px;">
         </div>
         <div class="canvas-wrapper" id="mainCanvasContainer">
+          <img id="mainBgImage" class="bg-image-preview" style="display:none;">
           <canvas id="mainCanvas"></canvas>
         </div>
         <div class="canvas-tools">
+          <label class="btn-action" style="cursor:pointer;">
+            📷 画像を添付
+            <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
+          </label>
           <button class="btn-action" onclick="clearMainCanvas()">クリア</button>
           <button class="btn-action" onclick="replayMainCanvas()">▶ プレビュー</button>
-          <button class="btn-action primary" onclick="submitMainPost()">投稿する (送信)</button>
+          <button class="btn-action primary" onclick="submitMainPost()">投稿する</button>
         </div>
       </section>
 
-      <!-- 2. タイムライン (直近10件) -->
+      <!-- 2. タイムライン (直近7件表示) -->
       <section class="section-card">
         <div class="section-title">
-          <span>💬 手書き掲示板タイムライン</span>
-          <span style="font-size:0.75rem; color:var(--sub-text);" id="postCountLabel">直近10件を表示</span>
+          <span>💬 掲示板タイムライン</span>
+          <span style="font-size:0.75rem; color:var(--sub-text);" id="postCountLabel">最新7件を表示中</span>
         </div>
         <div id="timelineContainer" style="display:flex; flex-direction:column; gap:10px;"></div>
       </section>
@@ -196,11 +209,11 @@
     </div>
   </div>
 
-  <!-- モーダル1: 過去ログ (11件目以降) -->
+  <!-- モーダル1: 8件目以降の過去ログ -->
   <div class="modal-overlay" id="archiveModal">
     <div class="modal-card">
       <div class="modal-header">
-        <span>📜 過去の投稿一覧</span>
+        <span>📜 過去の投稿一覧 (8件目以前)</span>
         <button class="icon-btn" onclick="closeModal('archiveModal')">✕ 閉じる</button>
       </div>
       <div class="modal-body" id="archiveContainer"></div>
@@ -227,20 +240,28 @@
     </div>
   </div>
 
-  <!-- モーダル3: 手書き返信モーダル -->
+  <!-- モーダル3: 返信（文字・手書き選択） -->
   <div class="modal-overlay" id="replyDrawModal">
     <div class="modal-card">
       <div class="modal-header">
-        <span>✍️ 手書きで返信</span>
+        <span>💬 コメント返信</span>
         <button class="icon-btn" onclick="closeModal('replyDrawModal')">✕ 閉じる</button>
       </div>
       <div class="modal-body">
-        <div class="canvas-wrapper" id="replyCanvasContainer" style="height:150px;">
+        <!-- 文字返信 -->
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="replyTextInput" placeholder="コメントを入力 (文字)" style="flex:1; background:#05070c; border:1px solid var(--border); color:white; padding:8px; border-radius:6px; font-size:0.85rem;">
+          <button class="btn-action primary" onclick="submitTextReply()">送信</button>
+        </div>
+        <hr style="border:none; border-top:1px solid var(--border); margin:4px 0;">
+        <!-- 手書き返信 -->
+        <div style="font-size:0.8rem; color:var(--sub-text);">または手書きで返信:</div>
+        <div class="canvas-wrapper" id="replyCanvasContainer" style="height:140px;">
           <canvas id="replyCanvas"></canvas>
         </div>
         <div class="canvas-tools">
           <button class="btn-action" onclick="clearReplyCanvas()">クリア</button>
-          <button class="btn-action primary" onclick="submitReplyDraw()">返信を送信</button>
+          <button class="btn-action primary" onclick="submitReplyDraw()">手書き返信を送信</button>
         </div>
       </div>
     </div>
@@ -249,7 +270,6 @@
   <script>
     const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzzX3-your-gas-url/exec";
 
-    // スプラッシュ消去
     setTimeout(() => {
       const splash = document.getElementById('splash');
       if (splash) {
@@ -258,14 +278,13 @@
       }
     }, 2200);
 
-    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V3')) || [];
+    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V4')) || [];
     let events = JSON.parse(localStorage.getItem('VIL_CANVAS_EVENTS')) || [];
     let activeReplyPostId = null;
     let activeAnimTimers = {};
+    let attachedImageData = null;
 
-    // メインキャンバス用
     let mainCanvas, mainCtx, isDrawing = false, currentStroke = [], mainHistory = [], startTime = 0;
-    // 返信キャンバス用
     let replyCanvas, replyCtx, isReplyDrawing = false, currentReplyStroke = [], replyHistory = [], replyStartTime = 0;
 
     window.onload = function() {
@@ -275,6 +294,21 @@
       setInterval(autoSyncData, 5000);
     };
 
+    /* --- 画像選択処理 --- */
+    function handleImageSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        attachedImageData = evt.target.result;
+        const bgImg = document.getElementById('mainBgImage');
+        bgImg.src = attachedImageData;
+        bgImg.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+
     /* --- メインキャンバス処理 --- */
     function initMainCanvas() {
       const container = document.getElementById('mainCanvasContainer');
@@ -283,9 +317,7 @@
       mainCanvas.height = container.clientHeight;
 
       mainCtx = mainCanvas.getContext('2d');
-      mainCtx.lineWidth = 3.5;
-      mainCtx.lineCap = 'round';
-      mainCtx.strokeStyle = '#10b981';
+      mainCtx.lineWidth = 3.5; mainCtx.lineCap = 'round'; mainCtx.strokeStyle = '#10b981';
 
       function getPos(e) {
         const rect = mainCanvas.getBoundingClientRect();
@@ -298,8 +330,7 @@
         isDrawing = true;
         if (mainHistory.length === 0) startTime = Date.now();
         const pos = getPos(e);
-        mainCtx.beginPath();
-        mainCtx.moveTo(pos.x, pos.y);
+        mainCtx.beginPath(); mainCtx.moveTo(pos.x, pos.y);
         currentStroke = [{ type: 'start', x: pos.x, y: pos.y, t: Date.now() - startTime }];
       }
 
@@ -307,8 +338,7 @@
         if (!isDrawing) return;
         e.preventDefault();
         const pos = getPos(e);
-        mainCtx.lineTo(pos.x, pos.y);
-        mainCtx.stroke();
+        mainCtx.lineTo(pos.x, pos.y); mainCtx.stroke();
         currentStroke.push({ type: 'move', x: pos.x, y: pos.y, t: Date.now() - startTime });
       }
 
@@ -319,17 +349,17 @@
         }
       }
 
-      mainCanvas.addEventListener('mousedown', startDraw);
-      mainCanvas.addEventListener('mousemove', moveDraw);
-      mainCanvas.addEventListener('mouseup', endDraw);
-      mainCanvas.addEventListener('touchstart', startDraw);
-      mainCanvas.addEventListener('touchmove', moveDraw);
-      mainCanvas.addEventListener('touchend', endDraw);
+      mainCanvas.addEventListener('mousedown', startDraw); mainCanvas.addEventListener('mousemove', moveDraw); mainCanvas.addEventListener('mouseup', endDraw);
+      mainCanvas.addEventListener('touchstart', startDraw); mainCanvas.addEventListener('touchmove', moveDraw); mainCanvas.addEventListener('touchend', endDraw);
     }
 
     function clearMainCanvas() {
       mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
       mainHistory = [];
+      attachedImageData = null;
+      const bgImg = document.getElementById('mainBgImage');
+      bgImg.src = ''; bgImg.style.display = 'none';
+      document.getElementById('imageInput').value = '';
     }
 
     function replayMainCanvas() {
@@ -338,8 +368,8 @@
     }
 
     function submitMainPost() {
-      if (mainHistory.length === 0) {
-        alert('メッセージを描いてください。'); return;
+      if (mainHistory.length === 0 && !attachedImageData) {
+        alert('メッセージまたは画像を追加してください。'); return;
       }
       const author = document.getElementById('authorName').value || '名無し';
       const newPost = {
@@ -347,6 +377,7 @@
         author: author,
         time: new Date().toLocaleString('ja-JP'),
         strokes: mainHistory,
+        image: attachedImageData,
         reactions: { '👍': 0, '👌': 0, '🙏': 0 },
         replies: []
       };
@@ -355,18 +386,14 @@
       saveLocalPosts();
       clearMainCanvas();
       renderTimeline();
-      sendPushNotification("新着手書き投稿", `${author}さんからメッセージが届きました！`);
     }
 
-    /* --- アニメーション再生エンジン (キャンバスクリア対応) --- */
+    /* --- アニメーション再生エンジン --- */
     function playStrokeAnimation(canvasId, strokeHistory) {
       const cvs = document.getElementById(canvasId);
       if (!cvs) return;
       const c = cvs.getContext('2d');
-      
-      if (activeAnimTimers[canvasId]) {
-        cancelAnimationFrame(activeAnimTimers[canvasId]);
-      }
+      if (activeAnimTimers[canvasId]) cancelAnimationFrame(activeAnimTimers[canvasId]);
 
       c.clearRect(0, 0, cvs.width, cvs.height);
       c.lineWidth = 3.5; c.lineCap = 'round'; c.strokeStyle = '#10b981';
@@ -393,10 +420,10 @@
       activeAnimTimers[canvasId] = requestAnimationFrame(step);
     }
 
-    /* --- タイムライン描画 (直近10件) --- */
+    /* --- タイムライン描画 (最新7件表示 & コメントブルー・折りたたみ) --- */
     function renderTimeline() {
       const container = document.getElementById('timelineContainer');
-      const recentPosts = posts.slice(0, 10);
+      const recentPosts = posts.slice(0, 7); // 最新7件に限定
 
       if (recentPosts.length === 0) {
         container.innerHTML = '<p style="color:var(--sub-text); font-size:0.8rem;">まだ投稿がありません。</p>';
@@ -405,16 +432,18 @@
 
       container.innerHTML = recentPosts.map((post) => {
         const canvasId = 'postCvs_' + post.id;
+        const repliesCount = (post.replies || []).length;
+
         let repliesHtml = (post.replies || []).map(r => {
           if (r.strokes) {
             const rCvsId = 'replyCvs_' + r.id;
             setTimeout(() => playStrokeAnimation(rCvsId, r.strokes), 100);
             return `<div class="reply-item">
-              <div style="font-size:0.7rem; color:var(--sub-text);">${r.author} • ${r.time}</div>
-              <canvas id="${rCvsId}" width="200" height="80" style="background:#05070c; border-radius:4px;"></canvas>
+              <div style="font-size:0.7rem; color:#93c5fd;">${r.author} • ${r.time}</div>
+              <canvas id="${rCvsId}" width="200" height="70" style="background:#05070c; border-radius:4px;"></canvas>
             </div>`;
           } else {
-            return `<div class="reply-item"><strong>${r.author}:</strong> ${r.text} <span style="font-size:0.65rem; color:var(--sub-text);">${r.time}</span></div>`;
+            return `<div class="reply-item"><strong>${r.author}:</strong> ${r.text} <span style="font-size:0.65rem;">(${r.time})</span></div>`;
           }
         }).join('');
 
@@ -427,6 +456,7 @@
               <span>${post.time}</span>
             </div>
             <div class="post-body">
+              ${post.image ? `<img src="${post.image}" class="bg-image-preview">` : ''}
               <canvas id="${canvasId}" width="260" height="120"></canvas>
             </div>
             <div class="reaction-bar">
@@ -434,19 +464,30 @@
               <button class="react-btn" onclick="addReaction('${post.id}', '👌')">👌 ${post.reactions ? (post.reactions['👌'] || 0) : 0}</button>
               <button class="react-btn" onclick="addReaction('${post.id}', '🙏')">🙏 ${post.reactions ? (post.reactions['🙏'] || 0) : 0}</button>
               <button class="react-btn" onclick="triggerReplay('${post.id}')">▶ 再生</button>
-              <button class="react-btn" style="color:var(--primary);" onclick="openReplyModal('${post.id}')">✍️ 返信</button>
+              <button class="react-btn" style="color:var(--reply-blue);" onclick="openReplyModal('${post.id}')">💬 返信</button>
             </div>
-            ${repliesHtml ? `<div class="replies-container">${repliesHtml}</div>` : ''}
+            
+            ${repliesCount > 0 ? `
+              <button class="toggle-reply-btn" onclick="toggleReplies('${post.id}')">
+                💬 コメントを見る (${repliesCount}件) ▼
+              </button>
+              <div class="replies-container" id="replies_${post.id}">
+                ${repliesHtml}
+              </div>
+            ` : ''}
           </div>
         `;
       }).join('');
     }
 
+    function toggleReplies(postId) {
+      const el = document.getElementById('replies_' + postId);
+      if (el) el.classList.toggle('open');
+    }
+
     function triggerReplay(postId) {
       const target = posts.find(p => p.id === postId);
-      if (target) {
-        playStrokeAnimation('postCvs_' + postId, target.strokes);
-      }
+      if (target) playStrokeAnimation('postCvs_' + postId, target.strokes);
     }
 
     function addReaction(postId, emoji) {
@@ -459,11 +500,33 @@
       }
     }
 
-    /* --- 手書き返信処理 (キャンバスサイズ不整合修正) --- */
+    /* --- 返信処理 (文字 ＆ 手書き) --- */
     function openReplyModal(postId) {
       activeReplyPostId = postId;
+      document.getElementById('replyTextInput').value = '';
       document.getElementById('replyDrawModal').style.display = 'flex';
       setTimeout(initReplyCanvas, 150);
+    }
+
+    function submitTextReply() {
+      const text = document.getElementById('replyTextInput').value.trim();
+      if (!text) return;
+      const target = posts.find(p => p.id === activeReplyPostId);
+      if (target) {
+        if (!target.replies) target.replies = [];
+        const author = document.getElementById('authorName').value || '名無し';
+        target.replies.push({
+          id: 'R_' + Date.now(),
+          author: author,
+          time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+          text: text
+        });
+        saveLocalPosts();
+        closeModal('replyDrawModal');
+        renderTimeline();
+        // 返信追加時に自動でコメント枠を開く
+        setTimeout(() => { toggleReplies(activeReplyPostId); }, 150);
+      }
     }
 
     function initReplyCanvas() {
@@ -471,9 +534,8 @@
       replyCanvas = document.getElementById('replyCanvas');
       replyCanvas.width = container.clientWidth;
       replyCanvas.height = container.clientHeight;
-      
       replyCtx = replyCanvas.getContext('2d');
-      replyCtx.lineWidth = 3; replyCtx.lineCap = 'round'; replyCtx.strokeStyle = '#10b981';
+      replyCtx.lineWidth = 3; replyCtx.lineCap = 'round'; replyCtx.strokeStyle = '#3b82f6';
       replyHistory = [];
 
       function getPos(e) {
@@ -531,17 +593,18 @@
         closeModal('replyDrawModal');
         clearReplyCanvas();
         renderTimeline();
+        setTimeout(() => { toggleReplies(activeReplyPostId); }, 150);
       }
     }
 
-    /* --- 過去アーカイブ表示 --- */
+    /* --- 8件目以降の過去アーカイブ --- */
     function openArchiveModal() {
       document.getElementById('archiveModal').style.display = 'flex';
       const container = document.getElementById('archiveContainer');
-      const archivePosts = posts.slice(10);
+      const archivePosts = posts.slice(7); // 8件目以降
 
       if (archivePosts.length === 0) {
-        container.innerHTML = '<p style="color:var(--sub-text); font-size:0.8rem;">11件目以降の過去投稿はまだありません。</p>';
+        container.innerHTML = '<p style="color:var(--sub-text); font-size:0.8rem;">8件目以降の過去投稿はまだありません。</p>';
         return;
       }
 
@@ -551,13 +614,16 @@
         return `
           <div class="post-card">
             <div class="post-header"><strong>${post.author}</strong><span>${post.time}</span></div>
-            <div class="post-body"><canvas id="${canvasId}" width="260" height="120"></canvas></div>
+            <div class="post-body">
+              ${post.image ? `<img src="${post.image}" class="bg-image-preview">` : ''}
+              <canvas id="${canvasId}" width="260" height="120"></canvas>
+            </div>
           </div>
         `;
       }).join('');
     }
 
-    /* --- カレンダー & 予定追加・削除 --- */
+    /* --- カレンダー機能 --- */
     function renderCalendar() {
       const now = new Date();
       const year = now.getFullYear(); const month = now.getMonth();
@@ -630,7 +696,7 @@
       `).join('');
     }
 
-    /* --- バックグラウンド同期 ＆ 新着判定 --- */
+    /* --- オンライン自動同期 --- */
     function autoSyncData() {
       fetch(GAS_WEB_APP_URL, {
         method: 'POST',
@@ -651,23 +717,17 @@
     }
 
     function saveLocalPosts() {
-      localStorage.setItem('VIL_CANVAS_POSTS_V3', JSON.stringify(posts));
+      localStorage.setItem('VIL_CANVAS_POSTS_V4', JSON.stringify(posts));
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-    /* --- 通知機能 --- */
     function requestNotificationPermission() {
       if ('Notification' in window) {
         Notification.requestPermission().then(permission => {
-          if (permission === 'granted') {
-            alert('通知をオンにしました！新着投稿があるとお知らせします。');
-          } else {
-            alert('通知がブロックされました。端末の設定をご確認ください。');
-          }
+          if (permission === 'granted') alert('通知をオンにしました！');
+          else alert('通知がブロックされました。');
         });
-      } else {
-        alert('お使いのブラウザは通知に対応していません。');
       }
     }
 
