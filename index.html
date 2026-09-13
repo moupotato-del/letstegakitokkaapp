@@ -111,7 +111,7 @@
     .replies-container { margin-top: 6px; padding-left: 10px; border-left: 2px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
     .reply-item { background: #151c2c; padding: 6px 8px; border-radius: 6px; font-size: 0.8rem; }
 
-    /* Modals (Archive / Calendar Event / Reply) */
+    /* Modals */
     .modal-overlay {
       display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 10000;
       justify-content: center; align-items: center; padding: 15px;
@@ -235,7 +235,7 @@
         <button class="icon-btn" onclick="closeModal('replyDrawModal')">✕ 閉じる</button>
       </div>
       <div class="modal-body">
-        <div class="canvas-wrapper" style="height:150px;">
+        <div class="canvas-wrapper" id="replyCanvasContainer" style="height:150px;">
           <canvas id="replyCanvas"></canvas>
         </div>
         <div class="canvas-tools">
@@ -261,6 +261,7 @@
     let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V3')) || [];
     let events = JSON.parse(localStorage.getItem('VIL_CANVAS_EVENTS')) || [];
     let activeReplyPostId = null;
+    let activeAnimTimers = {};
 
     // メインキャンバス用
     let mainCanvas, mainCtx, isDrawing = false, currentStroke = [], mainHistory = [], startTime = 0;
@@ -271,7 +272,7 @@
       initMainCanvas();
       renderTimeline();
       renderCalendar();
-      setInterval(autoSyncData, 4000); // 4秒自動同期
+      setInterval(autoSyncData, 5000);
     };
 
     /* --- メインキャンバス処理 --- */
@@ -314,7 +315,7 @@
       function endDraw() {
         if (isDrawing) {
           isDrawing = false;
-          mainHistory.push(currentStroke);
+          if (currentStroke.length > 0) mainHistory.push(currentStroke);
         }
       }
 
@@ -357,11 +358,16 @@
       sendPushNotification("新着手書き投稿", `${author}さんからメッセージが届きました！`);
     }
 
-    /* --- アニメーション再生エンジン --- */
+    /* --- アニメーション再生エンジン (キャンバスクリア対応) --- */
     function playStrokeAnimation(canvasId, strokeHistory) {
       const cvs = document.getElementById(canvasId);
       if (!cvs) return;
       const c = cvs.getContext('2d');
+      
+      if (activeAnimTimers[canvasId]) {
+        cancelAnimationFrame(activeAnimTimers[canvasId]);
+      }
+
       c.clearRect(0, 0, cvs.width, cvs.height);
       c.lineWidth = 3.5; c.lineCap = 'round'; c.strokeStyle = '#10b981';
 
@@ -380,9 +386,11 @@
           else if (pt.type === 'move') { c.lineTo(pt.x, pt.y); c.stroke(); }
           idx++;
         }
-        if (idx < allPoints.length) requestAnimationFrame(step);
+        if (idx < allPoints.length) {
+          activeAnimTimers[canvasId] = requestAnimationFrame(step);
+        }
       }
-      requestAnimationFrame(step);
+      activeAnimTimers[canvasId] = requestAnimationFrame(step);
     }
 
     /* --- タイムライン描画 (直近10件) --- */
@@ -395,7 +403,7 @@
         return;
       }
 
-      container.innerHTML = recentPosts.map((post, idx) => {
+      container.innerHTML = recentPosts.map((post) => {
         const canvasId = 'postCvs_' + post.id;
         let repliesHtml = (post.replies || []).map(r => {
           if (r.strokes) {
@@ -422,16 +430,23 @@
               <canvas id="${canvasId}" width="260" height="120"></canvas>
             </div>
             <div class="reaction-bar">
-              <button class="react-btn" onclick="addReaction('${post.id}', '👍')">👍 ${post.reactions['👍'] || 0}</button>
-              <button class="react-btn" onclick="addReaction('${post.id}', '👌')">👌 ${post.reactions['👌'] || 0}</button>
-              <button class="react-btn" onclick="addReaction('${post.id}', '🙏')">🙏 ${post.reactions['🙏'] || 0}</button>
-              <button class="react-btn" onclick="playStrokeAnimation('${canvasId}', ${JSON.stringify(post.strokes).replace(/"/g, '&quot;')})">▶ 再生</button>
+              <button class="react-btn" onclick="addReaction('${post.id}', '👍')">👍 ${post.reactions ? (post.reactions['👍'] || 0) : 0}</button>
+              <button class="react-btn" onclick="addReaction('${post.id}', '👌')">👌 ${post.reactions ? (post.reactions['👌'] || 0) : 0}</button>
+              <button class="react-btn" onclick="addReaction('${post.id}', '🙏')">🙏 ${post.reactions ? (post.reactions['🙏'] || 0) : 0}</button>
+              <button class="react-btn" onclick="triggerReplay('${post.id}')">▶ 再生</button>
               <button class="react-btn" style="color:var(--primary);" onclick="openReplyModal('${post.id}')">✍️ 返信</button>
             </div>
             ${repliesHtml ? `<div class="replies-container">${repliesHtml}</div>` : ''}
           </div>
         `;
       }).join('');
+    }
+
+    function triggerReplay(postId) {
+      const target = posts.find(p => p.id === postId);
+      if (target) {
+        playStrokeAnimation('postCvs_' + postId, target.strokes);
+      }
     }
 
     function addReaction(postId, emoji) {
@@ -444,19 +459,22 @@
       }
     }
 
-    /* --- 手書き返信処理 --- */
+    /* --- 手書き返信処理 (キャンバスサイズ不整合修正) --- */
     function openReplyModal(postId) {
       activeReplyPostId = postId;
       document.getElementById('replyDrawModal').style.display = 'flex';
-      setTimeout(initReplyCanvas, 100);
+      setTimeout(initReplyCanvas, 150);
     }
 
     function initReplyCanvas() {
+      const container = document.getElementById('replyCanvasContainer');
       replyCanvas = document.getElementById('replyCanvas');
-      replyCanvas.width = replyCanvas.parentElement.clientWidth;
-      replyCanvas.height = replyCanvas.parentElement.clientHeight;
+      replyCanvas.width = container.clientWidth;
+      replyCanvas.height = container.clientHeight;
+      
       replyCtx = replyCanvas.getContext('2d');
       replyCtx.lineWidth = 3; replyCtx.lineCap = 'round'; replyCtx.strokeStyle = '#10b981';
+      replyHistory = [];
 
       function getPos(e) {
         const rect = replyCanvas.getBoundingClientRect();
@@ -482,7 +500,10 @@
       }
 
       function end() {
-        if (isReplyDrawing) { isReplyDrawing = false; replyHistory.push(currentReplyStroke); }
+        if (isReplyDrawing) {
+          isReplyDrawing = false;
+          if (currentReplyStroke.length > 0) replyHistory.push(currentReplyStroke);
+        }
       }
 
       replyCanvas.addEventListener('mousedown', start); replyCanvas.addEventListener('mousemove', move); replyCanvas.addEventListener('mouseup', end);
@@ -513,7 +534,7 @@
       }
     }
 
-    /* --- 過去アーカイブ表示 (11件目〜) --- */
+    /* --- 過去アーカイブ表示 --- */
     function openArchiveModal() {
       document.getElementById('archiveModal').style.display = 'flex';
       const container = document.getElementById('archiveContainer');
@@ -570,6 +591,9 @@
     }
 
     function openAddEventModal() {
+      if (!document.getElementById('evtDate').value) {
+        document.getElementById('evtDate').value = new Date().toISOString().split('T')[0];
+      }
       document.getElementById('eventModal').style.display = 'flex';
       renderEventList();
     }
@@ -581,7 +605,7 @@
       events.push({ id: 'E_' + Date.now(), date: date, title: title });
       localStorage.setItem('VIL_CANVAS_EVENTS', JSON.stringify(events));
       document.getElementById('evtTitle').value = '';
-      renderEventList();
+      closeModal('eventModal');
       renderCalendar();
     }
 
@@ -615,7 +639,7 @@
       })
       .then(res => res.json())
       .then(res => {
-        if (res.posts && JSON.stringify(res.posts) !== JSON.stringify(posts)) {
+        if (res.posts && res.posts.length !== posts.length) {
           posts = res.posts;
           saveLocalPosts();
           renderTimeline();
@@ -632,7 +656,7 @@
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-    /* --- 通知機能 (Web Push API) --- */
+    /* --- 通知機能 --- */
     function requestNotificationPermission() {
       if ('Notification' in window) {
         Notification.requestPermission().then(permission => {
