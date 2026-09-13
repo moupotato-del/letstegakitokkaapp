@@ -144,7 +144,6 @@
     .modal-header { font-weight: bold; font-size: 1rem; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
     .modal-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
 
-    /* 全画面大画面入力モーダル */
     #fullscreenDrawModal .modal-card {
       width: 100vw; height: 100dvh; max-width: 100vw; max-height: 100dvh; border-radius: 0; border: none; padding: 12px;
     }
@@ -206,7 +205,7 @@
         </div>
       </section>
 
-      <!-- 2. タイムライン (最新7件表示) -->
+      <!-- 2. タイムライン -->
       <section class="section-card">
         <div class="section-title">
           <span>💬 掲示板タイムライン</span>
@@ -393,7 +392,7 @@
       closeModal('nameModal');
     }
 
-    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V11')) || [];
+    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V12')) || [];
     let events = JSON.parse(localStorage.getItem('VIL_CANVAS_EVENTS')) || [];
     let activeReplyPostId = null;
     let activeAnimTimers = {};
@@ -411,20 +410,26 @@
       setInterval(autoSyncData, 5000);
     };
 
+    /* --- 画像選択処理 (修正完了) --- */
     function handleImageSelect(e) {
-      const file = e.target.files[0];
+      const file = e.target.files && e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(evt) {
         attachedImageData = evt.target.result;
+        
         const bgImg = document.getElementById('mainBgImage');
-        bgImg.src = attachedImageData;
-        bgImg.style.display = 'block';
+        if (bgImg) {
+          bgImg.src = attachedImageData;
+          bgImg.style.display = 'block';
+        }
 
         const fsBg = document.getElementById('fsBgImage');
-        fsBg.src = attachedImageData;
-        fsBg.style.display = 'block';
+        if (fsBg) {
+          fsBg.src = attachedImageData;
+          fsBg.style.display = 'block';
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -472,7 +477,6 @@
       mainCanvas.addEventListener('touchstart', startDraw); mainCanvas.addEventListener('touchmove', moveDraw); mainCanvas.addEventListener('touchend', endDraw);
     }
 
-    /* --- 大画面全画面入力機能 --- */
     function openFullscreenDraw() {
       document.getElementById('fullscreenDrawModal').style.display = 'flex';
       setTimeout(initFullscreenCanvas, 150);
@@ -542,10 +546,11 @@
       mainHistory = [];
       attachedImageData = null;
       const bgImg = document.getElementById('mainBgImage');
-      bgImg.src = ''; bgImg.style.display = 'none';
+      if (bgImg) { bgImg.src = ''; bgImg.style.display = 'none'; }
       const fsBg = document.getElementById('fsBgImage');
-      fsBg.src = ''; fsBg.style.display = 'none';
-      document.getElementById('imageInput').value = '';
+      if (fsBg) { fsBg.src = ''; fsBg.style.display = 'none'; }
+      const fileInp = document.getElementById('imageInput');
+      if (fileInp) fileInp.value = '';
     }
 
     function replayMainCanvas() {
@@ -965,7 +970,7 @@
     }
 
     function saveLocalPosts() {
-      localStorage.setItem('VIL_CANVAS_POSTS_V11', JSON.stringify(posts));
+      localStorage.setItem('VIL_CANVAS_POSTS_V12', JSON.stringify(posts));
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
@@ -987,4 +992,3 @@
   </script>
 </body>
 </html>
-
