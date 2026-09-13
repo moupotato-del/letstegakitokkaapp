@@ -81,19 +81,24 @@
     }
     .section-title { font-size: 0.92rem; font-weight: bold; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
 
-    /* Canvas & Image Wrapper */
+    /* Canvas Wrapper */
     .canvas-wrapper {
       position: relative; background: #05070c; border-radius: 10px; border: 1px solid var(--border);
-      overflow: hidden; height: 180px; display: flex; justify-content: center; align-items: center;
+      overflow: hidden; height: 180px; width: 100%; display: flex; justify-content: center; align-items: center;
     }
     canvas { touch-action: none; cursor: crosshair; width: 100%; height: 100%; position: absolute; inset: 0; z-index: 2; }
     .bg-image-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; opacity: 0.8; }
 
-    .canvas-tools { display: flex; gap: 6px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+    /* ツールバー ＆ 右下大きめ送信ボタン */
+    .canvas-tools { display: flex; gap: 6px; justify-content: space-between; align-items: center; flex-wrap: nowrap; }
     .btn-action {
       background: #222d45; color: var(--text); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; font-weight: bold; font-size: 0.8rem; cursor: pointer;
     }
-    .btn-action.primary { background: var(--primary); color: #05070c; border: none; }
+    .btn-submit-lg {
+      background: var(--primary); color: #05070c; border: none; padding: 10px 20px; border-radius: 10px;
+      font-weight: 900; font-size: 0.95rem; cursor: pointer; box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3); margin-left: auto;
+    }
+    .btn-submit-lg:active { transform: scale(0.97); }
 
     /* BBS Post Cards */
     .post-card {
@@ -103,14 +108,14 @@
     .author-tag { font-weight: bold; font-size: 0.85rem; }
     .user-id-badge { font-size: 0.7rem; opacity: 0.85; margin-left: 3px; font-weight: normal; font-family: monospace; }
     
-    .post-body { background: #05070c; border-radius: 8px; padding: 6px; overflow: hidden; position: relative; height: 130px; }
+    .post-body { background: #05070c; border-radius: 8px; padding: 0; overflow: hidden; position: relative; height: 130px; width: 100%; }
     
     .reaction-bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
     .react-btn {
       background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 2px 8px; font-size: 0.75rem; color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 4px;
     }
 
-    /* 折りたたみコメント・スレッド */
+    /* コメント・スレッド (サイズ固定・文字膨らみガード) */
     .toggle-reply-btn {
       background: none; border: none; color: var(--reply-blue); font-size: 0.75rem; font-weight: bold; cursor: pointer; margin-top: 4px; text-align: left; display: flex; align-items: center; gap: 4px;
     }
@@ -118,7 +123,7 @@
       display: none; margin-top: 6px; padding-left: 10px; border-left: 2px solid var(--reply-blue); flex-direction: column; gap: 6px;
     }
     .replies-container.open { display: flex; }
-    .reply-item { background: #151c2c; padding: 6px 8px; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(59, 130, 246, 0.2); }
+    .reply-item { background: #151c2c; padding: 6px 8px; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(59, 130, 246, 0.2); word-break: break-all; }
 
     /* Modals */
     .modal-overlay {
@@ -166,7 +171,7 @@
     </header>
 
     <div class="main-content">
-      <!-- 1. 新規手書き作成カード -->
+      <!-- 1. 新規手書き作成カード (右下に大きめ投稿ボタン) -->
       <section class="section-card">
         <div class="section-title">
           <span>✍️ メッセージ・写真メモ</span>
@@ -178,12 +183,12 @@
         </div>
         <div class="canvas-tools">
           <label class="btn-action" style="cursor:pointer;">
-            📷 画像を添付
+            📷 画像
             <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
           </label>
           <button class="btn-action" onclick="clearMainCanvas()">クリア</button>
           <button class="btn-action" onclick="replayMainCanvas()">▶ プレビュー</button>
-          <button class="btn-action primary" onclick="submitMainPost()">投稿する</button>
+          <button class="btn-submit-lg" onclick="submitMainPost()">投稿（送信）</button>
         </div>
       </section>
 
@@ -211,7 +216,7 @@
     </div>
   </div>
 
-  <!-- モーダル0: 名前変更モーダル -->
+  <!-- モーダル0: 名前変更 -->
   <div class="modal-overlay" id="nameModal">
     <div class="modal-card" style="max-width:360px;">
       <div class="modal-header">
@@ -226,7 +231,7 @@
     </div>
   </div>
 
-  <!-- モーダル1: 8件目以降の過去ログ -->
+  <!-- モーダル1: 過去ログ -->
   <div class="modal-overlay" id="archiveModal">
     <div class="modal-card">
       <div class="modal-header">
@@ -271,12 +276,12 @@
         </div>
         <hr style="border:none; border-top:1px solid var(--border); margin:4px 0;">
         <div style="font-size:0.8rem; color:var(--sub-text);">または手書きで返信:</div>
-        <div class="canvas-wrapper" id="replyCanvasContainer" style="height:140px;">
+        <div class="canvas-wrapper" id="replyCanvasContainer" style="height:130px; position:relative;">
           <canvas id="replyCanvas"></canvas>
         </div>
         <div class="canvas-tools">
           <button class="btn-action" onclick="clearReplyCanvas()">クリア</button>
-          <button class="btn-action primary" onclick="submitReplyDraw()">手書き返信を送信</button>
+          <button class="btn-submit-lg" style="padding:8px 16px; font-size:0.85rem;" onclick="submitReplyDraw()">手書き返信を送信</button>
         </div>
       </div>
     </div>
@@ -293,11 +298,10 @@
       }
     }, 2200);
 
-    /* --- 端末固有ID ＆ 表示色自動生成エンジン --- */
     function getOrCreateDeviceId() {
       let devId = localStorage.getItem('VIL_DEVICE_5ID');
       if (!devId) {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 視認性の良い32文字
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         devId = '';
         for (let i = 0; i < 5; i++) {
           devId += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -307,14 +311,12 @@
       return devId;
     }
 
-    // ID文字列から見やすい視認性抜群のカラー（HSL）を自動決定
     function generateVisibleColor(str) {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
         hash = str.charCodeAt(i) + ((hash << 5) - hash);
       }
       const hue = Math.abs(hash) % 360;
-      // ダーク背景に映える高輝度・高彩度カラー
       return `hsl(${hue}, 85%, 65%)`;
     }
 
@@ -326,7 +328,7 @@
       const myId = getOrCreateDeviceId();
       const myName = getUserName();
       const myColor = generateVisibleColor(myId);
-      document.getElementById('currentAuthorDisplay').innerHTML = `投稿者: <span style="color:${myColor}; font-weight:bold;">${myName}</span> <span style="font-size:0.7rem; opacity:0.75;">(${myId})</span>`;
+      document.getElementById('currentAuthorDisplay').innerHTML = `<span style="color:${myColor}; font-weight:bold;">${myName}</span> <span style="font-size:0.7rem; opacity:0.75;">(${myId})</span>`;
     }
 
     function openNameModal() {
@@ -342,7 +344,7 @@
       closeModal('nameModal');
     }
 
-    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V5')) || [];
+    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V6')) || [];
     let events = JSON.parse(localStorage.getItem('VIL_CANVAS_EVENTS')) || [];
     let activeReplyPostId = null;
     let activeAnimTimers = {};
@@ -359,7 +361,6 @@
       setInterval(autoSyncData, 5000);
     };
 
-    /* --- 画像選択処理 --- */
     function handleImageSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -374,7 +375,6 @@
       reader.readAsDataURL(file);
     }
 
-    /* --- メインキャンバス処理 --- */
     function initMainCanvas() {
       const container = document.getElementById('mainCanvasContainer');
       mainCanvas = document.getElementById('mainCanvas');
@@ -455,7 +455,6 @@
       renderTimeline();
     }
 
-    /* --- アニメーション再生エンジン --- */
     function playStrokeAnimation(canvasId, strokeHistory) {
       const cvs = document.getElementById(canvasId);
       if (!cvs) return;
@@ -487,7 +486,6 @@
       activeAnimTimers[canvasId] = requestAnimationFrame(step);
     }
 
-    /* --- タイムライン描画 (7件表示 ＆ 名前カラー＋ID付与) --- */
     function renderTimeline() {
       const container = document.getElementById('timelineContainer');
       const recentPosts = posts.slice(0, 7);
@@ -509,7 +507,9 @@
             setTimeout(() => playStrokeAnimation(rCvsId, r.strokes), 100);
             return `<div class="reply-item">
               <div style="font-size:0.75rem;"><strong style="color:${rColor};">${r.author}</strong><span class="user-id-badge" style="color:${rColor};">(${r.userId || 'GUEST'})</span> • <span style="color:var(--sub-text);">${r.time}</span></div>
-              <canvas id="${rCvsId}" width="200" height="70" style="background:#05070c; border-radius:4px; margin-top:4px;"></canvas>
+              <div style="height:70px; width:100%; position:relative; background:#05070c; border-radius:4px; margin-top:4px; overflow:hidden;">
+                <canvas id="${rCvsId}"></canvas>
+              </div>
             </div>`;
           } else {
             return `<div class="reply-item"><strong style="color:${rColor};">${r.author}</strong><span class="user-id-badge" style="color:${rColor};">(${r.userId || 'GUEST'})</span>: <span style="color:#93c5fd;">${r.text}</span> <span style="font-size:0.65rem; color:var(--sub-text);">(${r.time})</span></div>`;
@@ -528,7 +528,7 @@
             </div>
             <div class="post-body">
               ${post.image ? `<img src="${post.image}" class="bg-image-preview">` : ''}
-              <canvas id="${canvasId}" width="260" height="120"></canvas>
+              <canvas id="${canvasId}"></canvas>
             </div>
             <div class="reaction-bar">
               <button class="react-btn" onclick="addReaction('${post.id}', '👍')">👍 ${post.reactions ? (post.reactions['👍'] || 0) : 0}</button>
@@ -571,7 +571,6 @@
       }
     }
 
-    /* --- 返信処理 --- */
     function openReplyModal(postId) {
       activeReplyPostId = postId;
       document.getElementById('replyTextInput').value = '';
@@ -667,7 +666,6 @@
       }
     }
 
-    /* --- 過去アーカイブ表示 --- */
     function openArchiveModal() {
       document.getElementById('archiveModal').style.display = 'flex';
       const container = document.getElementById('archiveContainer');
@@ -690,14 +688,13 @@
             </div>
             <div class="post-body">
               ${post.image ? `<img src="${post.image}" class="bg-image-preview">` : ''}
-              <canvas id="${canvasId}" width="260" height="120"></canvas>
+              <canvas id="${canvasId}"></canvas>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    /* --- カレンダー機能 --- */
     function renderCalendar() {
       const now = new Date();
       const year = now.getFullYear(); const month = now.getMonth();
@@ -770,7 +767,6 @@
       `).join('');
     }
 
-    /* --- オンライン自動同期 --- */
     function autoSyncData() {
       fetch(GAS_WEB_APP_URL, {
         method: 'POST',
@@ -791,7 +787,7 @@
     }
 
     function saveLocalPosts() {
-      localStorage.setItem('VIL_CANVAS_POSTS_V5', JSON.stringify(posts));
+      localStorage.setItem('VIL_CANVAS_POSTS_V6', JSON.stringify(posts));
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
