@@ -61,15 +61,15 @@
     header {
       display: flex; justify-content: space-between; align-items: center; padding: 2px 4px; flex-shrink: 0;
     }
-    .brand { font-size: 1.15rem; font-weight: 800; color: var(--primary); letter-spacing: 0.15em; display: flex; align-items: center; gap: 8px; }
+    .brand { font-size: 1.1rem; font-weight: 800; color: var(--primary); letter-spacing: 0.12em; display: flex; align-items: center; gap: 6px; }
     .new-badge {
       background: var(--accent-red); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; font-weight: bold;
       animation: blink 1.5s infinite; display: none;
     }
     @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-    .header-btns { display: flex; gap: 6px; align-items: center; }
-    .icon-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 14px; font-size: 0.75rem; cursor: pointer; font-weight: bold; }
+    .header-btns { display: flex; gap: 4px; align-items: center; }
+    .icon-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--text); padding: 5px 8px; border-radius: 12px; font-size: 0.72rem; cursor: pointer; font-weight: bold; }
 
     .main-content {
       flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 12px; min-height: 0; padding-right: 2px;
@@ -99,7 +99,10 @@
     .post-card {
       background: #0d1322; border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px;
     }
-    .post-header { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--sub-text); }
+    .post-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--sub-text); }
+    .author-tag { font-weight: bold; font-size: 0.85rem; }
+    .user-id-badge { font-size: 0.7rem; opacity: 0.85; margin-left: 3px; font-weight: normal; font-family: monospace; }
+    
     .post-body { background: #05070c; border-radius: 8px; padding: 6px; overflow: hidden; position: relative; height: 130px; }
     
     .reaction-bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
@@ -115,9 +118,7 @@
       display: none; margin-top: 6px; padding-left: 10px; border-left: 2px solid var(--reply-blue); flex-direction: column; gap: 6px;
     }
     .replies-container.open { display: flex; }
-    .reply-item { background: #151c2c; padding: 6px 8px; border-radius: 6px; font-size: 0.8rem; color: var(--reply-blue); border: 1px solid rgba(59, 130, 246, 0.2); }
-    .reply-item strong { color: #93c5fd; }
-    .reply-item span { color: var(--sub-text); }
+    .reply-item { background: #151c2c; padding: 6px 8px; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(59, 130, 246, 0.2); }
 
     /* Modals */
     .modal-overlay {
@@ -158,17 +159,18 @@
         VIL CANVAS <span class="new-badge" id="globalNewBadge">NEW</span>
       </div>
       <div class="header-btns">
-        <button class="icon-btn" onclick="requestNotificationPermission()">🔔 通知ON</button>
-        <button class="icon-btn" onclick="openArchiveModal()">📜 8件以前の過去ログ</button>
+        <button class="icon-btn" onclick="openNameModal()">👤 名前変更</button>
+        <button class="icon-btn" onclick="requestNotificationPermission()">🔔 通知</button>
+        <button class="icon-btn" onclick="openArchiveModal()">📜 過去ログ</button>
       </div>
     </header>
 
     <div class="main-content">
-      <!-- 1. 新規手書き作成カード (画像添付機能付き) -->
+      <!-- 1. 新規手書き作成カード -->
       <section class="section-card">
         <div class="section-title">
           <span>✍️ メッセージ・写真メモ</span>
-          <input type="text" id="authorName" placeholder="名前 (任意)" style="background:#05070c; border:1px solid var(--border); color:white; padding:2px 8px; border-radius:6px; font-size:0.75rem; width:100px;">
+          <span id="currentAuthorDisplay" style="font-size:0.75rem; color:var(--sub-text);"></span>
         </div>
         <div class="canvas-wrapper" id="mainCanvasContainer">
           <img id="mainBgImage" class="bg-image-preview" style="display:none;">
@@ -209,6 +211,21 @@
     </div>
   </div>
 
+  <!-- モーダル0: 名前変更モーダル -->
+  <div class="modal-overlay" id="nameModal">
+    <div class="modal-card" style="max-width:360px;">
+      <div class="modal-header">
+        <span>👤 ハンドルネーム変更</span>
+        <button class="icon-btn" onclick="closeModal('nameModal')">✕ 閉じる</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size:0.8rem; color:var(--sub-text);">表示される名前を設定できます（端末固有IDは自動付与されます）。</div>
+        <input type="text" id="nameInput" placeholder="名前を入力してください" style="background:#05070c; border:1px solid var(--border); color:white; padding:10px; border-radius:8px; font-size:0.9rem;">
+        <button class="btn-action primary" onclick="saveNameSetting()" style="width:100%;">保存する</button>
+      </div>
+    </div>
+  </div>
+
   <!-- モーダル1: 8件目以降の過去ログ -->
   <div class="modal-overlay" id="archiveModal">
     <div class="modal-card">
@@ -240,7 +257,7 @@
     </div>
   </div>
 
-  <!-- モーダル3: 返信（文字・手書き選択） -->
+  <!-- モーダル3: 返信 -->
   <div class="modal-overlay" id="replyDrawModal">
     <div class="modal-card">
       <div class="modal-header">
@@ -248,13 +265,11 @@
         <button class="icon-btn" onclick="closeModal('replyDrawModal')">✕ 閉じる</button>
       </div>
       <div class="modal-body">
-        <!-- 文字返信 -->
         <div style="display:flex; gap:6px;">
           <input type="text" id="replyTextInput" placeholder="コメントを入力 (文字)" style="flex:1; background:#05070c; border:1px solid var(--border); color:white; padding:8px; border-radius:6px; font-size:0.85rem;">
           <button class="btn-action primary" onclick="submitTextReply()">送信</button>
         </div>
         <hr style="border:none; border-top:1px solid var(--border); margin:4px 0;">
-        <!-- 手書き返信 -->
         <div style="font-size:0.8rem; color:var(--sub-text);">または手書きで返信:</div>
         <div class="canvas-wrapper" id="replyCanvasContainer" style="height:140px;">
           <canvas id="replyCanvas"></canvas>
@@ -278,7 +293,56 @@
       }
     }, 2200);
 
-    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V4')) || [];
+    /* --- 端末固有ID ＆ 表示色自動生成エンジン --- */
+    function getOrCreateDeviceId() {
+      let devId = localStorage.getItem('VIL_DEVICE_5ID');
+      if (!devId) {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 視認性の良い32文字
+        devId = '';
+        for (let i = 0; i < 5; i++) {
+          devId += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        localStorage.setItem('VIL_DEVICE_5ID', devId);
+      }
+      return devId;
+    }
+
+    // ID文字列から見やすい視認性抜群のカラー（HSL）を自動決定
+    function generateVisibleColor(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const hue = Math.abs(hash) % 360;
+      // ダーク背景に映える高輝度・高彩度カラー
+      return `hsl(${hue}, 85%, 65%)`;
+    }
+
+    function getUserName() {
+      return localStorage.getItem('VIL_USER_NAME') || '名無し';
+    }
+
+    function updateAuthorDisplay() {
+      const myId = getOrCreateDeviceId();
+      const myName = getUserName();
+      const myColor = generateVisibleColor(myId);
+      document.getElementById('currentAuthorDisplay').innerHTML = `投稿者: <span style="color:${myColor}; font-weight:bold;">${myName}</span> <span style="font-size:0.7rem; opacity:0.75;">(${myId})</span>`;
+    }
+
+    function openNameModal() {
+      document.getElementById('nameInput').value = getUserName();
+      document.getElementById('nameModal').style.display = 'flex';
+    }
+
+    function saveNameSetting() {
+      const input = document.getElementById('nameInput').value.trim();
+      const newName = input || '名無し';
+      localStorage.setItem('VIL_USER_NAME', newName);
+      updateAuthorDisplay();
+      closeModal('nameModal');
+    }
+
+    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V5')) || [];
     let events = JSON.parse(localStorage.getItem('VIL_CANVAS_EVENTS')) || [];
     let activeReplyPostId = null;
     let activeAnimTimers = {};
@@ -288,6 +352,7 @@
     let replyCanvas, replyCtx, isReplyDrawing = false, currentReplyStroke = [], replyHistory = [], replyStartTime = 0;
 
     window.onload = function() {
+      updateAuthorDisplay();
       initMainCanvas();
       renderTimeline();
       renderCalendar();
@@ -371,10 +436,12 @@
       if (mainHistory.length === 0 && !attachedImageData) {
         alert('メッセージまたは画像を追加してください。'); return;
       }
-      const author = document.getElementById('authorName').value || '名無し';
+      const author = getUserName();
+      const userId = getOrCreateDeviceId();
       const newPost = {
         id: 'P_' + Date.now(),
         author: author,
+        userId: userId,
         time: new Date().toLocaleString('ja-JP'),
         strokes: mainHistory,
         image: attachedImageData,
@@ -420,10 +487,10 @@
       activeAnimTimers[canvasId] = requestAnimationFrame(step);
     }
 
-    /* --- タイムライン描画 (最新7件表示 & コメントブルー・折りたたみ) --- */
+    /* --- タイムライン描画 (7件表示 ＆ 名前カラー＋ID付与) --- */
     function renderTimeline() {
       const container = document.getElementById('timelineContainer');
-      const recentPosts = posts.slice(0, 7); // 最新7件に限定
+      const recentPosts = posts.slice(0, 7);
 
       if (recentPosts.length === 0) {
         container.innerHTML = '<p style="color:var(--sub-text); font-size:0.8rem;">まだ投稿がありません。</p>';
@@ -433,17 +500,19 @@
       container.innerHTML = recentPosts.map((post) => {
         const canvasId = 'postCvs_' + post.id;
         const repliesCount = (post.replies || []).length;
+        const userColor = generateVisibleColor(post.userId || 'GUEST');
 
         let repliesHtml = (post.replies || []).map(r => {
+          const rColor = generateVisibleColor(r.userId || 'GUEST');
           if (r.strokes) {
             const rCvsId = 'replyCvs_' + r.id;
             setTimeout(() => playStrokeAnimation(rCvsId, r.strokes), 100);
             return `<div class="reply-item">
-              <div style="font-size:0.7rem; color:#93c5fd;">${r.author} • ${r.time}</div>
-              <canvas id="${rCvsId}" width="200" height="70" style="background:#05070c; border-radius:4px;"></canvas>
+              <div style="font-size:0.75rem;"><strong style="color:${rColor};">${r.author}</strong><span class="user-id-badge" style="color:${rColor};">(${r.userId || 'GUEST'})</span> • <span style="color:var(--sub-text);">${r.time}</span></div>
+              <canvas id="${rCvsId}" width="200" height="70" style="background:#05070c; border-radius:4px; margin-top:4px;"></canvas>
             </div>`;
           } else {
-            return `<div class="reply-item"><strong>${r.author}:</strong> ${r.text} <span style="font-size:0.65rem;">(${r.time})</span></div>`;
+            return `<div class="reply-item"><strong style="color:${rColor};">${r.author}</strong><span class="user-id-badge" style="color:${rColor};">(${r.userId || 'GUEST'})</span>: <span style="color:#93c5fd;">${r.text}</span> <span style="font-size:0.65rem; color:var(--sub-text);">(${r.time})</span></div>`;
           }
         }).join('');
 
@@ -452,7 +521,9 @@
         return `
           <div class="post-card">
             <div class="post-header">
-              <strong>${post.author}</strong>
+              <span class="author-tag" style="color:${userColor};">
+                ${post.author}<span class="user-id-badge" style="color:${userColor};">(${post.userId || 'GUEST'})</span>
+              </span>
               <span>${post.time}</span>
             </div>
             <div class="post-body">
@@ -500,7 +571,7 @@
       }
     }
 
-    /* --- 返信処理 (文字 ＆ 手書き) --- */
+    /* --- 返信処理 --- */
     function openReplyModal(postId) {
       activeReplyPostId = postId;
       document.getElementById('replyTextInput').value = '';
@@ -514,17 +585,16 @@
       const target = posts.find(p => p.id === activeReplyPostId);
       if (target) {
         if (!target.replies) target.replies = [];
-        const author = document.getElementById('authorName').value || '名無し';
         target.replies.push({
           id: 'R_' + Date.now(),
-          author: author,
+          author: getUserName(),
+          userId: getOrCreateDeviceId(),
           time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
           text: text
         });
         saveLocalPosts();
         closeModal('replyDrawModal');
         renderTimeline();
-        // 返信追加時に自動でコメント枠を開く
         setTimeout(() => { toggleReplies(activeReplyPostId); }, 150);
       }
     }
@@ -582,10 +652,10 @@
       const target = posts.find(p => p.id === activeReplyPostId);
       if (target) {
         if (!target.replies) target.replies = [];
-        const author = document.getElementById('authorName').value || '名無し';
         target.replies.push({
           id: 'R_' + Date.now(),
-          author: author,
+          author: getUserName(),
+          userId: getOrCreateDeviceId(),
           time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
           strokes: replyHistory
         });
@@ -597,11 +667,11 @@
       }
     }
 
-    /* --- 8件目以降の過去アーカイブ --- */
+    /* --- 過去アーカイブ表示 --- */
     function openArchiveModal() {
       document.getElementById('archiveModal').style.display = 'flex';
       const container = document.getElementById('archiveContainer');
-      const archivePosts = posts.slice(7); // 8件目以降
+      const archivePosts = posts.slice(7);
 
       if (archivePosts.length === 0) {
         container.innerHTML = '<p style="color:var(--sub-text); font-size:0.8rem;">8件目以降の過去投稿はまだありません。</p>';
@@ -610,10 +680,14 @@
 
       container.innerHTML = archivePosts.map((post) => {
         const canvasId = 'archCvs_' + post.id;
+        const userColor = generateVisibleColor(post.userId || 'GUEST');
         setTimeout(() => playStrokeAnimation(canvasId, post.strokes), 100);
         return `
           <div class="post-card">
-            <div class="post-header"><strong>${post.author}</strong><span>${post.time}</span></div>
+            <div class="post-header">
+              <strong style="color:${userColor};">${post.author}<span class="user-id-badge" style="color:${userColor};">(${post.userId || 'GUEST'})</span></strong>
+              <span>${post.time}</span>
+            </div>
             <div class="post-body">
               ${post.image ? `<img src="${post.image}" class="bg-image-preview">` : ''}
               <canvas id="${canvasId}" width="260" height="120"></canvas>
@@ -717,7 +791,7 @@
     }
 
     function saveLocalPosts() {
-      localStorage.setItem('VIL_CANVAS_POSTS_V4', JSON.stringify(posts));
+      localStorage.setItem('VIL_CANVAS_POSTS_V5', JSON.stringify(posts));
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
