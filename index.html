@@ -32,7 +32,6 @@
     .btn { background: #222d45; color: var(--text); border: 1px solid var(--border); padding: 7px 10px; border-radius: 6px; font-weight: bold; font-size: 0.75rem; cursor: pointer; }
     .btn.active { background: var(--primary); border-color: var(--primary); }
     
-    /* 点滅アニメーション */
     @keyframes blinkBtn { 0%, 100% { opacity: 1; background: var(--red); } 50% { opacity: 0.3; background: #991b1b; } }
     .blinking { animation: blinkBtn 0.6s infinite ease-in-out; }
 
@@ -264,8 +263,6 @@
 
     function toggleErase() {
       isErase = !isErase;
-      
-      // 消しゴムをオフにした場合は点滅を即座に消す
       if (!isErase) {
         stopBlinking();
         eraseClickCount = 0;
@@ -276,7 +273,6 @@
           triggerEraseBlink();
         }
       }
-
       const eBtn = document.getElementById('eraseBtn');
       const fBtn = document.getElementById('fEraseBtn');
       eBtn.classList.toggle('active', isErase);
@@ -287,14 +283,10 @@
     function triggerEraseBlink() {
       const eBtn = document.getElementById('eraseBtn');
       const fBtn = document.getElementById('fEraseBtn');
-      
       eBtn.classList.add('blinking');
       if(fBtn) fBtn.classList.add('blinking');
-
       if(blinkTimer) clearTimeout(blinkTimer);
-      blinkTimer = setTimeout(() => {
-        stopBlinking();
-      }, 3000);
+      blinkTimer = setTimeout(() => { stopBlinking(); }, 3000);
     }
 
     function stopBlinking() {
@@ -331,6 +323,28 @@
       history = [...fHistory]; document.getElementById('fullModal').style.display='none';
       mCtx.clearRect(0,0,mCvs.width,mCvs.height); if(history.length>0) playAnim('mCvs', history, '#10b981');
       saveDraft();
+    }
+
+    function enforceStorageLimit() {
+      try {
+        let testStr = JSON.stringify(posts);
+        // 容量超過対策：もしストレージ保存時にエラーになりそうなら、古い順に画像のデータだけを削除（テキストや手書きは保持）
+        while(true) {
+          try {
+            localStorage.setItem('V_POSTS', testStr);
+            break;
+          } catch(e) {
+            // 容量オーバー時、最も古い投稿から画像データを消す
+            let target = posts.find(p => p.image);
+            if(target) {
+              target.image = null;
+              testStr = JSON.stringify(posts);
+            } else {
+              break;
+            }
+          }
+        }
+      } catch(err) {}
     }
 
     function submitPost() {
@@ -510,7 +524,7 @@
     }
 
     function saveName() { let n=document.getElementById('nInp').value.trim(); if(n){ localStorage.setItem('V_NAME', n); updAuthor(); closeModal('nameModal'); } }
-    function saveP() { localStorage.setItem('V_POSTS', JSON.stringify(posts)); }
+    function saveP() { enforceStorageLimit(); }
     function closeModal(id) { document.getElementById(id).style.display='none'; }
     function openModal(id) { document.getElementById(id).style.display='flex'; }
   </script>
