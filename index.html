@@ -3,1163 +3,411 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>VIL Canvas - Handwriting Note</title>
+  <title>VIL Canvas</title>
   <style>
     :root {
-      --bg-color: #0b0f19;
-      --card-bg: #151c2c;
-      --primary: #3b82f6;
-      --primary-light: rgba(59, 130, 246, 0.15);
-      --text: #f9fafb;
-      --sub-text: #9ca3af;
-      --border: #2a354d;
-      --accent-red: #ef4444;
-      --reply-blue: #3b82f6;
+      --bg: #0b0f19; --card: #151c2c; --primary: #3b82f6; --text: #f9fafb; --sub: #9ca3af; --border: #2a354d; --red: #ef4444; --green: #10b981;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-    }
-
-    html, body {
-      width: 100%;
-      height: 100%;
-      height: 100dvh;
-      overflow: hidden;
-      background-color: var(--bg-color);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-
-    /* Splash Screen */
-    #splash {
-      position: fixed; inset: 0;
-      background: radial-gradient(circle at center, #1a263d 0%, #080b12 100%);
-      display: flex; flex-direction: column; justify-content: center; align-items: center;
-      z-index: 9999; transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    #splash.fade-out { opacity: 0; pointer-events: none; }
-    .splash-icon { font-size: 3rem; margin-bottom: 10px; filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.4)); }
-    .splash-logo {
-      font-size: 2.8rem; font-weight: 900; letter-spacing: 0.25em;
-      background: linear-gradient(135deg, #ffffff 0%, var(--primary) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 6px;
-    }
-    .splash-sub { font-size: 0.8rem; color: var(--sub-text); letter-spacing: 0.3em; font-weight: 600; text-transform: uppercase; }
-
-    /* App Container */
-    .app-container {
-      display: flex; flex-direction: column; height: 100dvh; max-width: 600px; margin: 0 auto; padding: 10px; gap: 10px;
-    }
-
-    header {
-      display: flex; justify-content: space-between; align-items: center; padding: 2px 4px; flex-shrink: 0;
-    }
-    .brand { font-size: 1.1rem; font-weight: 800; color: var(--primary); letter-spacing: 0.12em; display: flex; align-items: center; gap: 6px; }
-    .new-badge {
-      background: var(--accent-red); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; font-weight: bold;
-      animation: blink 1.5s infinite; display: none;
-    }
-    .event-badge {
-      background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; display: none;
-    }
-    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-
-    .header-btns { display: flex; gap: 4px; align-items: center; }
-    .icon-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--text); padding: 5px 8px; border-radius: 12px; font-size: 0.72rem; cursor: pointer; font-weight: bold; }
-
-    .main-content {
-      flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; display: flex; flex-direction: column; gap: 12px; min-height: 0; padding-right: 2px;
-    }
-
-    .section-card {
-      background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 14px; padding: 12px;
-      display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.25);
-    }
-    .section-title { font-size: 0.92rem; font-weight: bold; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
-
-    /* Canvas Wrapper */
-    .canvas-wrapper {
-      position: relative; background: #05070c; border-radius: 10px; border: 1px solid var(--border);
-      overflow: hidden; height: 180px; width: 100%; display: flex; justify-content: center; align-items: center;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+    html, body { width: 100%; height: 100%; height: 100dvh; overflow: hidden; background: var(--bg); color: var(--text); font-family: sans-serif; }
+    .app { display: flex; flex-direction: column; height: 100dvh; max-width: 600px; margin: 0 auto; padding: 8px; gap: 8px; }
+    header { display: flex; justify-content: space-between; align-items: center; padding: 2px; flex-shrink: 0; }
+    .brand { font-size: 0.95rem; font-weight: 800; color: var(--primary); display: flex; gap: 4px; align-items: center; }
+    .badge { background: var(--red); color: white; font-size: 0.6rem; padding: 2px 5px; border-radius: 8px; display: none; }
+    .btns { display: flex; gap: 3px; }
+    .ibtn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 4px 7px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; cursor: pointer; }
+    .dbtn { background: rgba(16,185,129,0.2); border-color: var(--green); color: var(--green); }
+    .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .c-title { font-size: 0.85rem; font-weight: bold; color: var(--primary); display: flex; justify-content: space-between; }
+    .c-wrap { position: relative; background: #05070c; border-radius: 8px; border: 1px solid var(--border); height: 160px; width: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; }
     canvas { touch-action: none; cursor: crosshair; width: 100%; height: 100%; position: absolute; inset: 0; z-index: 2; }
-    .bg-image-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; opacity: 0.95; pointer-events: none; }
-
-    /* Tools */
-    .canvas-tools { display: flex; gap: 6px; justify-content: space-between; align-items: center; flex-wrap: nowrap; }
-    .btn-action {
-      background: #222d45; color: var(--text); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; font-weight: bold; font-size: 0.8rem; cursor: pointer;
-    }
-    .btn-action.active { background: var(--primary); color: white; border-color: var(--primary); }
-    .btn-submit-lg {
-      background: var(--primary); color: #ffffff; border: none; padding: 10px 20px; border-radius: 10px;
-      font-weight: 900; font-size: 0.95rem; cursor: pointer; box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3); margin-left: auto;
-    }
-    .btn-submit-lg:active { transform: scale(0.97); }
-
-    .image-note { font-size: 0.7rem; color: var(--sub-text); margin-top: -4px; margin-bottom: 2px; }
-
-    /* BBS Cards */
-    .post-card {
-      background: #0d1322; border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px;
-    }
-    .post-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--sub-text); }
-    .author-tag { font-weight: bold; font-size: 0.85rem; }
-    .user-id-badge { font-size: 0.7rem; opacity: 0.85; margin-left: 3px; font-weight: normal; font-family: monospace; }
-    
-    .post-body { background: #05070c; border-radius: 8px; padding: 0; overflow: hidden; position: relative; height: 130px; width: 100%; cursor: pointer; border: 1px solid rgba(59, 130, 246, 0.2); }
-    .post-body::after {
-      content: '🔍 タップで拡大'; position: absolute; bottom: 4px; right: 6px; background: rgba(0,0,0,0.6); color: #60a5fa; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; pointer-events: none; z-index: 3;
-    }
-
-    .reaction-bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
-    .react-btn {
-      background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 2px 8px; font-size: 0.75rem; color: var(--text); cursor: pointer; display: flex; align-items: center; gap: 4px;
-    }
-
-    /* Comments */
-    .toggle-reply-btn {
-      background: none; border: none; color: var(--reply-blue); font-size: 0.75rem; font-weight: bold; cursor: pointer; margin-top: 4px; text-align: left; display: flex; align-items: center; gap: 4px;
-    }
-    .replies-container {
-      display: none; margin-top: 6px; padding-left: 10px; border-left: 2px solid var(--reply-blue); flex-direction: column; gap: 6px;
-    }
-    .replies-container.open { display: flex; }
-    .reply-item { background: #151c2c; padding: 6px 8px; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(59, 130, 246, 0.3); color: var(--reply-blue); word-break: break-all; }
-    .reply-header { display: flex; justify-content: space-between; align-items: center; }
-    .reply-text-content { color: #60a5fa; margin-top: 2px; }
-
-    .del-btn-sm {
-      background: none; border: none; color: var(--accent-red); font-size: 0.7rem; font-weight: bold; cursor: pointer; opacity: 0.8; padding: 2px 4px;
-    }
-    .del-btn-sm:hover { opacity: 1; text-decoration: underline; }
-
-    /* Modals */
-    .modal-overlay {
-      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000;
-      justify-content: center; align-items: center; padding: 15px;
-    }
-    .modal-card {
-      background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 16px; width: 100%; max-width: 500px;
-      max-height: 85vh; display: flex; flex-direction: column; padding: 16px; gap: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
-    .modal-header { font-weight: bold; font-size: 1rem; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
-    .modal-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-
-    #fullscreenDrawModal .modal-card,
-    #viewPostModal .modal-card {
-      width: 100vw; height: 100dvh; max-width: 100vw; max-height: 100dvh; border-radius: 0; border: none; padding: 12px;
-    }
-    #fullscreenCanvasContainer, #viewPostCanvasContainer { flex: 1; height: 100%; width: 100%; }
-
-    /* Calendar Base */
-    .calendar-section { height: 210px; flex-shrink: 0; }
-    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font-size: 0.75rem; flex: 1; }
-    .cal-head { font-weight: bold; color: var(--sub-text); padding: 2px 0; }
-    .cal-cell {
-      background: #0b0f19; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-      padding: 2px; font-weight: bold; color: #d1d5db; cursor: pointer; user-select: none; min-height: 26px;
-    }
-    .cal-cell.today { background: rgba(59, 130, 246, 0.2); color: var(--primary); border: 1px solid var(--primary); }
-    .event-dot { width: 4px; height: 4px; background: var(--primary); border-radius: 50%; margin-top: 2px; }
+    .bg-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1; opacity: 0.95; pointer-events: none; }
+    .tools { display: flex; gap: 5px; justify-content: space-between; align-items: center; }
+    .btn { background: #222d45; color: var(--text); border: 1px solid var(--border); padding: 7px 10px; border-radius: 6px; font-weight: bold; font-size: 0.75rem; cursor: pointer; }
+    .btn.active { background: var(--primary); border-color: var(--primary); }
+    .sbtn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 900; font-size: 0.85rem; cursor: pointer; margin-left: auto; }
+    .note { font-size: 0.65rem; color: var(--sub); margin-top: -4px; }
+    .post { background: #0d1322; border: 1px solid var(--border); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+    .p-head { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--sub); }
+    .p-body { background: #05070c; border-radius: 6px; height: 110px; width: 100%; position: relative; overflow: hidden; border: 1px solid rgba(59,130,246,0.2); cursor: pointer; }
+    .p-body::after { content: '🔍 拡大'; position: absolute; bottom: 3px; right: 5px; background: rgba(0,0,0,0.6); color: #60a5fa; font-size: 0.6rem; padding: 1px 4px; border-radius: 3px; z-index: 3; }
+    .r-bar { display: flex; gap: 4px; align-items: center; }
+    .r-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; padding: 2px 6px; font-size: 0.7rem; color: var(--text); cursor: pointer; }
+    .del { background: none; border: none; color: var(--red); font-size: 0.65rem; font-weight: bold; cursor: pointer; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; justify-content: center; align-items: center; padding: 10px; }
+    .m-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 480px; max-height: 90vh; display: flex; flex-direction: column; padding: 14px; gap: 10px; }
+    .full-modal { width: 100vw !important; height: 100dvh !important; max-width: none !important; max-height: none !important; border-radius: 0 !important; border: none !important; padding: 8px !important; }
+    .m-head { font-weight: bold; font-size: 0.9rem; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
+    .m-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+    .pin-disp { font-size: 1.8rem; letter-spacing: 0.4em; text-align: center; background: #05070c; padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-family: monospace; }
+    .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 250px; margin: 0 auto; }
+    .kbtn { background: #222d45; border: 1px solid var(--border); color: white; font-size: 1.2rem; font-weight: bold; padding: 12px; border-radius: 10px; cursor: pointer; text-align: center; }
+    .d-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .d-inp { background: #05070c; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 6px; font-size: 0.85rem; width: 100%; }
+    .tabs { display: flex; gap: 4px; overflow-x: auto; padding-bottom: 2px; }
+    .tbtn { background: #222d45; border: 1px solid var(--border); color: var(--sub); padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; cursor: pointer; white-space: nowrap; }
+    .tbtn.active { background: var(--green); color: white; border-color: var(--green); }
+    .cal-sec { height: 195px; flex-shrink: 0; }
+    .c-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font-size: 0.7rem; flex: 1; }
+    .c-head { font-weight: bold; color: var(--sub); }
+    .c-cell { background: #0b0f19; border-radius: 4px; display: flex; flex-direction: column; align-items: center; padding: 2px; font-weight: bold; color: #d1d5db; cursor: pointer; min-height: 24px; }
+    .c-cell.today { background: rgba(59,130,246,0.2); color: var(--primary); border: 1px solid var(--primary); }
+    .dot { width: 3px; height: 3px; background: var(--primary); border-radius: 50%; margin-top: 1px; }
   </style>
 </head>
 <body>
 
-  <!-- Splash Screen -->
-  <div id="splash">
-    <div class="splash-icon">✍️</div>
-    <div class="splash-logo">CANVAS</div>
-    <div class="splash-sub">Handwriting & Photo Note</div>
-  </div>
-
-  <div class="app-container">
+  <div class="app">
     <header>
-      <div class="brand">
-        VIL CANVAS 
-        <span class="new-badge" id="globalNewBadge">NEW</span>
-        <span class="event-badge" id="todayEventBadge">📅 本日の予定あり</span>
-      </div>
-      <div class="header-btns">
-        <button class="icon-btn" onclick="openNameModal()">👤 名前</button>
-        <button class="icon-btn" onclick="requestNotificationPermission()">🔔 通知</button>
-        <button class="icon-btn" onclick="openArchiveModal()">📜 過去ログ</button>
+      <div class="brand">VIL CANVAS <span class="badge" id="gBadge">NEW</span></div>
+      <div class="btns">
+        <button class="ibtn dbtn" onclick="openPin()">💰 入金</button>
+        <button class="ibtn" onclick="openModal('nameModal')">👤 名前</button>
+        <button class="ibtn" onclick="openModal('archModal')">📜 ログ</button>
       </div>
     </header>
 
-    <div class="main-content">
-      <!-- 1. 新規手書き作成カード -->
-      <section class="section-card">
-        <div class="section-title">
-          <span>✍️ メッセージ・写真メモ</span>
-          <span id="currentAuthorDisplay" style="font-size:0.75rem; color:var(--sub-text);"></span>
-        </div>
-        <div class="canvas-wrapper" id="mainCanvasContainer">
-          <img id="mainBgImage" class="bg-image-preview" style="display:none;">
-          <canvas id="mainCanvas"></canvas>
-        </div>
-        <div class="image-note">ℹ️ ※選択した画像は投稿しやすいサイズに自動で最適化されます。</div>
-        <div class="canvas-tools">
-          <label class="btn-action" style="cursor:pointer; display:flex; align-items:center; gap:4px;">
-            📷 画像
-            <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
-          </label>
-          <button class="btn-action" id="penSizeBtn" onclick="togglePenSize()">✏️ 細め</button>
-          <button class="btn-action" id="eraserBtn" onclick="toggleEraser()">🧹 消しゴム</button>
-          <button class="btn-action" onclick="openFullscreenDraw()">⛶ 全画面</button>
-          <button class="btn-action" onclick="clearMainCanvas()">クリア</button>
-          <button class="btn-submit-lg" onclick="submitMainPost()">投稿</button>
+    <div class="main">
+      <section class="card">
+        <div class="c-title"><span>✍️ メッセージ・写真</span><span id="authorDisp" style="font-size:0.7rem; color:var(--sub);"></span></div>
+        <div class="c-wrap" id="mWrap"><img id="mBg" class="bg-img" style="display:none;"><canvas id="mCvs"></canvas></div>
+        <div class="note">ℹ️ 画像は自動で最適化されます。</div>
+        <div class="tools">
+          <label class="btn" style="cursor:pointer;">📷 画像<input type="file" accept="image/*" style="display:none;" onchange="imgSelect(event)"></label>
+          <button class="btn" id="penBtn" onclick="togglePen()">細め</button>
+          <button class="btn" id="eraseBtn" onclick="toggleErase()">消しゴム</button>
+          <button class="btn" onclick="openFull()">全画面</button>
+          <button class="btn" onclick="clearCvs()">クリア</button>
+          <button class="sbtn" onclick="submitPost()">投稿</button>
         </div>
       </section>
 
-      <!-- 2. タイムライン -->
-      <section class="section-card">
-        <div class="section-title">
-          <span>💬 掲示板タイムライン</span>
-          <span style="font-size:0.75rem; color:var(--sub-text);" id="postCountLabel">最新7件を表示中</span>
-        </div>
-        <div id="timelineContainer" style="display:flex; flex-direction:column; gap:10px;"></div>
+      <section class="card">
+        <div class="c-title"><span>💬 タイムライン</span></div>
+        <div id="timeline" style="display:flex; flex-direction:column; gap:8px;"></div>
       </section>
 
-      <!-- 3. カレンダー -->
-      <section class="section-card calendar-section">
-        <div class="section-title">
-          <span id="calMonth">----年--月</span>
-          <button class="icon-btn" onclick="openAddEventModal()">＋ 予定追加</button>
-        </div>
-        <div class="cal-grid" id="calHeader">
-          <div class="cal-head" style="color:#ef4444;">日</div><div class="cal-head">月</div><div class="cal-head">火</div>
-          <div class="cal-head">水</div><div class="cal-head">木</div><div class="cal-head">金</div><div class="cal-head" style="color:#3b82f6;">土</div>
-        </div>
-        <div class="cal-grid" id="calBody"></div>
+      <section class="card cal-sec">
+        <div class="c-title"><span id="calM">----年--月</span><button class="ibtn" onclick="openEvt()">＋ 予定</button></div>
+        <div class="c-grid"><div class="c-head" style="color:var(--red);">日</div><div class="c-head">月</div><div class="c-head">火</div><div class="c-head">水</div><div class="c-head">木</div><div class="c-head">金</div><div class="c-head" style="color:var(--primary);">土</div></div>
+        <div class="c-grid" id="calB"></div>
       </section>
     </div>
   </div>
 
-  <!-- モーダル0: 投稿フル画面拡大閲覧モーダル -->
-  <div class="modal-overlay" id="viewPostModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <span id="viewPostHeaderTitle">🔍 投稿の拡大表示</span>
-        <button class="icon-btn" onclick="closeModal('viewPostModal')">✕ 閉じる</button>
-      </div>
-      <div class="modal-body" style="padding:0;">
-        <div class="canvas-wrapper" id="viewPostCanvasContainer">
-          <img id="viewPostBgImage" class="bg-image-preview" style="display:none;">
-          <canvas id="viewPostCanvas"></canvas>
-        </div>
-      </div>
-      <div class="canvas-tools" style="padding-top:8px;">
-        <button class="btn-action" id="viewPostReplayBtn">▶ 再生</button>
-        <button class="btn-action" style="margin-left:auto;" onclick="closeModal('viewPostModal')">閉じる</button>
+  <!-- 拡大表示用 -->
+  <div class="modal" id="viewModal" onclick="closeModal('viewModal')">
+    <div class="card full-modal" onclick="event.stopPropagation()">
+      <div class="m-head"><span id="vTitle">拡大表示</span><button class="ibtn" onclick="closeModal('viewModal')">✕</button></div>
+      <div class="c-wrap" id="vWrap" style="flex:1; height:auto;"><img id="vBg" class="bg-img" style="display:none;"><canvas id="vCvs"></canvas></div>
+      <div class="tools"><button class="btn" id="vRep">▶ 再生</button><button class="btn" onclick="closeModal('viewModal')">閉じる</button></div>
+    </div>
+  </div>
+
+  <!-- 全画面入力用 -->
+  <div class="modal" id="fullModal">
+    <div class="card full-modal">
+      <div class="m-head"><span>⛶ 全画面入力</span><button class="ibtn" onclick="closeFull()">✓ 完了</button></div>
+      <div class="c-wrap" id="fWrap" style="flex:1; height:auto;"><img id="fBg" class="bg-img" style="display:none;"><canvas id="fCvs"></canvas></div>
+      <div class="tools"><button class="btn" onclick="clearFull()">クリア</button><button class="sbtn" onclick="closeFull()">完了して反映</button></div>
+    </div>
+  </div>
+
+  <!-- PIN認証用 -->
+  <div class="modal" id="pinModal">
+    <div class="m-card" style="max-width:320px;">
+      <div class="m-head"><span style="color:var(--green);">🔒 入金管理 認証</span><button class="ibtn" onclick="closeModal('pinModal')">✕</button></div>
+      <div class="pin-disp" id="pinStr">----</div>
+      <div class="pad">
+        <button class="kbtn" onclick="pKey('1')">1</button><button class="kbtn" onclick="pKey('2')">2</button><button class="kbtn" onclick="pKey('3')">3</button>
+        <button class="kbtn" onclick="pKey('4')">4</button><button class="kbtn" onclick="pKey('5')">5</button><button class="kbtn" onclick="pKey('6')">6</button>
+        <button class="kbtn" onclick="pKey('7')">7</button><button class="kbtn" onclick="pKey('8')">8</button><button class="kbtn" onclick="pKey('9')">9</button>
+        <button class="kbtn" onclick="pKey('C')" style="color:var(--red); font-size:0.9rem;">C</button><button class="kbtn" onclick="pKey('0')">0</button><button class="kbtn" onclick="pKey('OK')" style="color:var(--green); font-size:0.9rem;">OK</button>
       </div>
     </div>
   </div>
 
-  <!-- モーダル1: 大画面入力モーダル -->
-  <div class="modal-overlay" id="fullscreenDrawModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <span>⛶ 大画面手書き入力</span>
-        <button class="icon-btn" onclick="closeFullscreenDraw()">✓ 完了して戻る</button>
-      </div>
-      <div class="modal-body" style="padding:0;">
-        <div class="canvas-wrapper" id="fullscreenCanvasContainer">
-          <img id="fsBgImage" class="bg-image-preview" style="display:none;">
-          <canvas id="fsCanvas"></canvas>
+  <!-- 入金管理画面用 -->
+  <div class="modal" id="depModal">
+    <div class="card full-modal">
+      <div class="m-head"><span style="color:var(--green);">💰 入金管理 & 担当別ボード</span><button class="ibtn" onclick="closeModal('depModal')">✕</button></div>
+      <div class="m-body">
+        <div class="card" style="border-color:var(--green); background:#0d1322;">
+          <div class="c-title" style="color:var(--green);">＋ 新規入金記録</div>
+          <div class="d-grid"><input type="number" id="dAmt" class="d-inp" placeholder="金額 (例: 15000)"><input type="text" id="dCli" class="d-inp" placeholder="顧客名 / 案件名"></div>
+          <div class="d-grid"><input type="text" id="dStf" class="d-inp" placeholder="担当者名 (例: 山田)"><label class="d-inp" style="text-align:center; background:#222d45; cursor:pointer;">📷 レシート画像<input type="file" accept="image/*" style="display:none;" onchange="dImgSel(event)"></label></div>
+          <div id="dPrevC" style="display:none; height:70px; background:#05070c; border-radius:6px; overflow:hidden;"><img id="dPrev" style="width:100%; height:100%; object-fit:contain;"></div>
+          <button class="btn" style="background:var(--green); color:white;" onclick="dSub()">登録する</button>
         </div>
-      </div>
-      <div class="canvas-tools" style="padding-top:8px;">
-        <button class="btn-action" onclick="clearFsCanvas()">クリア</button>
-        <button class="btn-submit-lg" onclick="closeFullscreenDraw()">画面を反映して完了</button>
+        <div class="tabs" id="dTabs"></div>
+        <div id="dTL" style="display:flex; flex-direction:column; gap:8px;"></div>
       </div>
     </div>
   </div>
 
-  <!-- モーダル2: 名前変更 -->
-  <div class="modal-overlay" id="nameModal">
-    <div class="modal-card" style="max-width:360px;">
-      <div class="modal-header">
-        <span>👤 ハンドルネーム変更</span>
-        <button class="icon-btn" onclick="closeModal('nameModal')">✕ 閉じる</button>
-      </div>
-      <div class="modal-body">
-        <div style="font-size:0.8rem; color:var(--sub-text);">名前を変更すると、過去のあなたの全投稿・コメントの表示名も自動変更されます。</div>
-        <input type="text" id="nameInput" placeholder="名前を入力してください" style="background:#05070c; border:1px solid var(--border); color:white; padding:10px; border-radius:8px; font-size:0.9rem;">
-        <button class="btn-action primary" onclick="saveNameSetting()" style="width:100%;">一括変更して保存</button>
-      </div>
+  <!-- 名前変更 -->
+  <div class="modal" id="nameModal">
+    <div class="m-card" style="max-width:320px;">
+      <div class="m-head"><span>名前変更</span><button class="ibtn" onclick="closeModal('nameModal')">✕</button></div>
+      <input type="text" id="nInp" class="d-inp" placeholder="名前">
+      <button class="btn" style="background:var(--primary); color:white;" onclick="saveName()">保存</button>
     </div>
   </div>
 
-  <!-- モーダル3: 過去ログ -->
-  <div class="modal-overlay" id="archiveModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <span>📜 過去の投稿一覧 (8件目以前)</span>
-        <button class="icon-btn" onclick="closeModal('archiveModal')">✕ 閉じる</button>
-      </div>
-      <div class="modal-body" id="archiveContainer"></div>
+  <!-- 過去ログ -->
+  <div class="modal" id="archModal">
+    <div class="card full-modal">
+      <div class="m-head"><span>過去ログ (8件目以降)</span><button class="ibtn" onclick="closeModal('archModal')">✕</button></div>
+      <div class="m-body" id="archC"></div>
     </div>
   </div>
 
-  <!-- モーダル4: 予定追加 / 削除 -->
-  <div class="modal-overlay" id="eventModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <span>📅 予定の管理</span>
-        <button class="icon-btn" onclick="closeModal('eventModal')">✕ 閉じる</button>
-      </div>
-      <div class="modal-body">
-        <form id="eventForm" onsubmit="saveEvent(event)" style="display:flex; flex-direction:column; gap:8px;">
-          <input type="date" id="evtDate" required style="background:#05070c; border:1px solid var(--border); color:white; padding:8px; border-radius:6px;">
-          <input type="text" id="evtTitle" placeholder="予定を入力してください" required style="background:#05070c; border:1px solid var(--border); color:white; padding:8px; border-radius:6px;">
-          <button type="submit" class="btn-action primary" style="width:100%;">予定を保存</button>
-        </form>
-        <hr style="border:none; border-top:1px solid var(--border); margin:6px 0;">
-        <div style="font-weight:bold; font-size:0.85rem; color:var(--sub-text);">登録済み予定一覧:</div>
-        <div id="eventListContainer" style="display:flex; flex-direction:column; gap:6px;"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- モーダル5: 返信 -->
-  <div class="modal-overlay" id="replyDrawModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <span style="color:var(--reply-blue);">💬 返信コメント作成</span>
-        <button class="icon-btn" onclick="closeModal('replyDrawModal')">✕ 閉じる</button>
-      </div>
-      <div class="modal-body">
-        <div style="display:flex; gap:6px;">
-          <input type="text" id="replyTextInput" placeholder="コメントを入力 (文字)" style="flex:1; background:#05070c; border:1px solid var(--reply-blue); color:#60a5fa; padding:8px; border-radius:6px; font-size:0.85rem;">
-          <button class="btn-action" style="background:var(--reply-blue); color:white; border:none;" onclick="submitTextReply()">送信</button>
-        </div>
-        <hr style="border:none; border-top:1px solid var(--border); margin:4px 0;">
-        <div style="font-size:0.8rem; color:var(--reply-blue); font-weight:bold;">または手書きで返信 (ブルー描画):</div>
-        <div class="canvas-wrapper" id="replyCanvasContainer" style="height:130px; position:relative; border-color:var(--reply-blue);">
-          <canvas id="replyCanvas"></canvas>
-        </div>
-        <div class="canvas-tools">
-          <button class="btn-action" onclick="clearReplyCanvas()">クリア</button>
-          <button class="btn-action" style="background:var(--reply-blue); color:white; border:none;" onclick="replayReplyCanvas()">▶ プレビュー</button>
-          <button class="btn-submit-lg" style="background:var(--reply-blue); color:white; padding:8px 16px; font-size:0.85rem;" onclick="submitReplyDraw()">手書き返信を送信</button>
-        </div>
-      </div>
+  <!-- 予定追加 -->
+  <div class="modal" id="evtModal">
+    <div class="m-card" style="max-width:320px;">
+      <div class="m-head"><span>予定の管理</span><button class="ibtn" onclick="closeModal('evtModal')">✕</button></div>
+      <input type="date" id="eDate" class="d-inp">
+      <input type="text" id="eTitle" class="d-inp" placeholder="予定内容">
+      <button class="btn" style="background:var(--primary); color:white;" onclick="saveEvt()">保存</button>
+      <div id="eList" style="display:flex; flex-direction:column; gap:4px; max-height:150px; overflow-y:auto;"></div>
     </div>
   </div>
 
   <script>
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzzX3-your-gas-url/exec";
+    const GAS = "https://script.google.com/macros/s/AKfycbzzX3-your-gas-url/exec";
+    let posts = JSON.parse(localStorage.getItem('V_POSTS')) || [];
+    let deps = JSON.parse(localStorage.getItem('V_DEPS')) || [];
+    let events = JSON.parse(localStorage.getItem('V_EVTS')) || [];
+    let imgData = null, dImgData = null, pinStrVal = "", curTab = "すべて";
+    let mCvs, mCtx, fCvs, fCtx, vCvs, vCtx, isDraw = false, history = [], fHistory = [], startT = 0, lineW = 3.5, isErase = false;
 
-    setTimeout(() => {
-      const splash = document.getElementById('splash');
-      if (splash) {
-        splash.classList.add('fade-out');
-        setTimeout(() => { splash.style.display = 'none'; }, 600);
-      }
-    }, 2200);
-
-    function getOrCreateDeviceId() {
-      let devId = localStorage.getItem('VIL_DEVICE_5ID');
-      if (!devId) {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-        devId = '';
-        for (let i = 0; i < 5; i++) {
-          devId += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        localStorage.setItem('VIL_DEVICE_5ID', devId);
-      }
-      return devId;
-    }
-
-    function generateVisibleColor(str) {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      const hue = Math.abs(hash) % 360;
-      return `hsl(${hue}, 85%, 65%)`;
-    }
-
-    function getUserName() {
-      return localStorage.getItem('VIL_USER_NAME') || '名無し';
-    }
-
-    function updateAuthorDisplay() {
-      const myId = getOrCreateDeviceId();
-      const myName = getUserName();
-      const myColor = generateVisibleColor(myId);
-      document.getElementById('currentAuthorDisplay').innerHTML = `<span style="color:${myColor}; font-weight:bold;">${myName}</span> <span style="font-size:0.7rem; opacity:0.75;">(${myId})</span>`;
-    }
-
-    function openNameModal() {
-      document.getElementById('nameInput').value = getUserName();
-      document.getElementById('nameModal').style.display = 'flex';
-    }
-
-    function saveNameSetting() {
-      const input = document.getElementById('nameInput').value.trim();
-      const newName = input || '名無し';
-      const myId = getOrCreateDeviceId();
-
-      localStorage.setItem('VIL_USER_NAME', newName);
-
-      posts.forEach(p => {
-        if (p.userId === myId) p.author = newName;
-        if (p.replies) {
-          p.replies.forEach(r => {
-            if (r.userId === myId) r.author = newName;
-          });
-        }
-      });
-
-      saveLocalPosts();
-      updateAuthorDisplay();
-      renderTimeline();
-      closeModal('nameModal');
-    }
-
-    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V16')) || [];
-    let events = JSON.parse(localStorage.getItem('VIL_CANVAS_EVENTS')) || [];
-    let activeReplyPostId = null;
-    let activeAnimTimers = {};
-    let attachedImageData = null;
-
-    let mainCanvas, mainCtx, isDrawing = false, currentStroke = [], mainHistory = [], startTime = 0;
-    let fsCanvas, fsCtx, isFsDrawing = false, currentFsStroke = [];
-    let replyCanvas, replyCtx, isReplyDrawing = false, currentReplyStroke = [], replyHistory = [], replyStartTime = 0;
-
-    let currentLineWidth = 3.5;
-    let isEraserMode = false;
-
-    window.onload = function() {
-      updateAuthorDisplay();
-      initMainCanvas();
-      loadDraft();
-      renderTimeline();
-      renderCalendar();
-      setInterval(autoSyncData, 5000);
-      setInterval(renderTimelineTimeAgo, 60000); // 1分ごとに経過時間を更新
+    window.onload = () => {
+      updAuthor(); initCvs(); renderTL(); renderCal();
+      setInterval(() => fetch(GAS,{method:'POST',body:JSON.stringify({posts,events})}).then(r=>r.json()).then(res=>{
+        if(res.posts && res.posts.length !== posts.length){ posts = res.posts; saveP(); renderTL(); document.getElementById('gBadge').style.display='inline-block'; }
+      }).catch(()=>{}), 10000);
     };
 
-    function togglePenSize() {
-      isEraserMode = false;
-      document.getElementById('eraserBtn').classList.remove('active');
-      currentLineWidth = (currentLineWidth === 3.5) ? 2.0 : 3.5;
-      const btn = document.getElementById('penSizeBtn');
-      btn.innerText = currentLineWidth === 3.5 ? '✏️ 細め' : '✏️ 極細';
-      btn.classList.toggle('active', currentLineWidth === 2.0);
-      if (mainCtx) mainCtx.strokeStyle = '#3b82f6';
+    function getDevId() {
+      let id = localStorage.getItem('V_DID');
+      if(!id) { id = Math.random().toString(36).substring(2,7).toUpperCase(); localStorage.setItem('V_DID', id); }
+      return id;
     }
+    function getCol(s) { let h=0; for(let i=0;i<s.length;i++) h=s.charCodeAt(i)+((h<<5)-h); return `hsl(${Math.abs(h)%360},85%,65%)`; }
+    function uName() { return localStorage.getItem('V_NAME') || '名無し'; }
+    function updAuthor() { document.getElementById('authorDisp').innerHTML = `<span style="color:${getCol(getDevId())};">${uName()}</span>`; }
 
-    function toggleEraser() {
-      isEraserMode = !isEraserMode;
-      const btn = document.getElementById('eraserBtn');
-      btn.classList.toggle('active', isEraserMode);
-      if (isEraserMode) {
-        document.getElementById('penSizeBtn').classList.remove('active');
-        currentLineWidth = 12.0;
-      } else {
-        currentLineWidth = 3.5;
-      }
-    }
-
-    /* --- オートセーブ（下書き保存・復元） --- */
-    function saveDraft() {
-      const draft = { history: mainHistory, image: attachedImageData };
-      localStorage.setItem('VIL_CANVAS_DRAFT', JSON.stringify(draft));
-    }
-
-    function loadDraft() {
-      const saved = localStorage.getItem('VIL_CANVAS_DRAFT');
-      if (saved) {
-        try {
-          const draft = JSON.parse(saved);
-          if (draft.history && draft.history.length > 0) {
-            mainHistory = draft.history;
-            playStrokeAnimation('mainCanvas', mainHistory, '#3b82f6');
-          }
-          if (draft.image) {
-            attachedImageData = draft.image;
-            const bgImg = document.getElementById('mainBgImage');
-            if (bgImg) { bgImg.src = attachedImageData; bgImg.style.display = 'block'; }
-          }
-        } catch(e) {}
-      }
-    }
-
-    function clearDraft() {
-      localStorage.removeItem('VIL_CANVAS_DRAFT');
-    }
-
-    function handleImageSelect(e) {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(evt) {
+    function imgSelect(e) {
+      const f = e.target.files[0]; if(!f) return;
+      const r = new FileReader();
+      r.onload = ev => {
         const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          let width = img.width; let height = img.height;
-          const MAX_SIZE = 1024;
-          if (width > height) {
-            if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
-          } else {
-            if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
-          }
-          canvas.width = width; canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
+        img.onload = () => {
+          const c = document.createElement('canvas'); let w=img.width, h=img.height;
+          if(w>1024){ h*=1024/w; w=1024; } if(h>1024){ w*=1024/h; h=1024; }
+          c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h);
+          imgData = c.toDataURL('image/jpeg',0.8);
+          ['mBg','fBg'].forEach(id => { let el=document.getElementById(id); if(el){el.src=imgData; el.style.display='block';} });
+        }; img.src = ev.target.result;
+      }; r.readAsDataURL(f);
+    }
 
-          attachedImageData = canvas.toDataURL('image/jpeg', 0.8);
-
-          const bgImg = document.getElementById('mainBgImage');
-          if (bgImg) { bgImg.src = attachedImageData; bgImg.style.display = 'block'; }
-          const fsBg = document.getElementById('fsBgImage');
-          if (fsBg) { fsBg.src = attachedImageData; fsBg.style.display = 'block'; }
-          saveDraft();
+    function initCvs() {
+      mCvs = document.getElementById('mCvs'); const wrap = document.getElementById('mWrap');
+      mCvs.width = wrap.clientWidth; mCvs.height = wrap.clientHeight; mCtx = mCvs.getContext('2d'); mCtx.lineCap='round';
+      
+      const drawEvts = (cvs, ctx, histGetter, histSetter) => {
+        let drawing = false, stroke = [];
+        const pos = e => { const r = cvs.getBoundingClientRect(); const cl = e.touches?e.touches[0].clientX:e.clientX, ct = e.touches?e.touches[0].clientY:e.clientY; return {x:cl-r.left, y:ct-r.top}; };
+        cvs.onmousedown = cvs.ontouchstart = e => {
+          drawing = true; if(histGetter().length===0) startT=Date.now();
+          const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineWidth=lineW; ctx.strokeStyle=isErase?'#05070c':'#3b82f6';
+          stroke = [{type:'start', x:p.x, y:p.y, t:Date.now()-startT, erase:isErase, w:lineW}];
         };
-        img.src = evt.target.result;
+        cvs.onmousemove = cvs.ontouchmove = e => {
+          if(!drawing) return; e.preventDefault(); const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke();
+          stroke.push({type:'move', x:p.x, y:p.y, t:Date.now()-startT});
+        };
+        cvs.onmouseup = cvs.ontouchend = () => {
+          if(drawing){ drawing=false; if(stroke.length>0) histSetter().push(stroke); }
+        };
       };
-      reader.readAsDataURL(file);
+      drawEvts(mCvs, mCtx, ()=>history, ()=>history);
     }
 
-    function initMainCanvas() {
-      const container = document.getElementById('mainCanvasContainer');
-      mainCanvas = document.getElementById('mainCanvas');
-      mainCanvas.width = container.clientWidth;
-      mainCanvas.height = container.clientHeight;
+    function togglePen() { isErase=false; document.getElementById('eraseBtn').classList.remove('active'); lineW = lineW===3.5?2.0:3.5; document.getElementById('penBtn').classList.toggle('active', lineW===2.0); }
+    function toggleErase() { isErase=!isErase; document.getElementById('eraseBtn').classList.toggle('active', isErase); if(isErase){ document.getElementById('penBtn').classList.remove('active'); lineW=12; }else lineW=3.5; }
+    function clearCvs() { mCtx.clearRect(0,0,mCvs.width,mCvs.height); history=[]; imgData=null; ['mBg','fBg'].forEach(id=>{let el=document.getElementById(id);if(el){el.src='';el.style.display='none';}}); }
 
-      mainCtx = mainCanvas.getContext('2d');
-      mainCtx.lineCap = 'round';
-
-      function getPos(e) {
-        const rect = mainCanvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: clientX - rect.left, y: clientY - rect.top };
-      }
-
-      function startDraw(e) {
-        isDrawing = true;
-        if (mainHistory.length === 0) startTime = Date.now();
-        const pos = getPos(e);
-        mainCtx.beginPath(); mainCtx.moveTo(pos.x, pos.y);
-        mainCtx.lineWidth = currentLineWidth;
-        mainCtx.strokeStyle = isEraserMode ? '#05070c' : '#3b82f6';
-        currentStroke = [{ type: 'start', x: pos.x, y: pos.y, t: Date.now() - startTime, isEraser: isEraserMode, width: currentLineWidth }];
-      }
-
-      function moveDraw(e) {
-        if (!isDrawing) return;
-        e.preventDefault();
-        const pos = getPos(e);
-        mainCtx.lineTo(pos.x, pos.y); mainCtx.stroke();
-        currentStroke.push({ type: 'move', x: pos.x, y: pos.y, t: Date.now() - startTime });
-      }
-
-      function endDraw() {
-        if (isDrawing) {
-          isDrawing = false;
-          if (currentStroke.length > 0) {
-            mainHistory.push(currentStroke);
-            saveDraft();
-          }
-        }
-      }
-
-      mainCanvas.addEventListener('mousedown', startDraw); mainCanvas.addEventListener('mousemove', moveDraw); mainCanvas.addEventListener('mouseup', endDraw);
-      mainCanvas.addEventListener('touchstart', startDraw); mainCanvas.addEventListener('touchmove', moveDraw); mainCanvas.addEventListener('touchend', endDraw);
+    function openFull() {
+      fHistory = [...history]; document.getElementById('fullModal').style.display = 'flex';
+      setTimeout(() => {
+        fCvs = document.getElementById('fCvs'); const wrap = document.getElementById('fWrap');
+        fCvs.width = wrap.clientWidth; fCvs.height = wrap.clientHeight; fCtx = fCvs.getContext('2d'); fCtx.lineCap='round';
+        if(imgData){ let el=document.getElementById('fBg'); el.src=imgData; el.style.display='block'; }
+        if(fHistory.length>0) playAnim('fCvs', fHistory);
+        //簡易手書き設定
+        let drawing=false, stroke=[];
+        const pos = e => { const r = fCvs.getBoundingClientRect(); const cl = e.touches?e.touches[0].clientX:e.clientX, ct = e.touches?e.touches[0].clientY:e.clientY; return {x:cl-r.left, y:ct-r.top}; };
+        fCvs.onmousedown = fCvs.ontouchstart = e => { drawing=true; const p=pos(e); fCtx.beginPath(); fCtx.moveTo(p.x,p.y); fCtx.lineWidth=lineW; fCtx.strokeStyle=isErase?'#05070c':'#3b82f6'; stroke=[{type:'start',x:p.x,y:p.y,t:Date.now()-startT,erase:isErase,w:lineW}]; };
+        fCvs.onmousemove = fCvs.ontouchmove = e => { if(!drawing)return; e.preventDefault(); const p=pos(e); fCtx.lineTo(p.x,p.y); fCtx.stroke(); stroke.push({type:'move',x:p.x,y:p.y,t:Date.now()-startT}); };
+        fCvs.onmouseup = fCvs.ontouchend = () => { if(drawing){ drawing=false; if(stroke.length>0) fHistory.push(stroke); } };
+      }, 100);
+    }
+    function clearFull() { fCtx.clearRect(0,0,fCvs.width,fCvs.height); fHistory=[]; }
+    function closeFull() {
+      history = [...fHistory]; document.getElementById('fullModal').style.display='none';
+      mCtx.clearRect(0,0,mCvs.width,mCvs.height); if(history.length>0) playAnim('mCvs', history);
     }
 
-    function openFullscreenDraw() {
-      document.getElementById('fullscreenDrawModal').style.display = 'flex';
-      setTimeout(initFullscreenCanvas, 150);
-    }
-
-    function initFullscreenCanvas() {
-      const container = document.getElementById('fullscreenCanvasContainer');
-      fsCanvas = document.getElementById('fsCanvas');
-      fsCanvas.width = container.clientWidth;
-      fsCanvas.height = container.clientHeight;
-
-      fsCtx = fsCanvas.getContext('2d');
-      fsCtx.lineCap = 'round';
-
-      if (mainHistory.length > 0) {
-        playStrokeAnimation('fsCanvas', mainHistory, '#3b82f6');
-      }
-
-      function getPos(e) {
-        const rect = fsCanvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: clientX - rect.left, y: clientY - rect.top };
-      }
-
-      function start(e) {
-        isFsDrawing = true;
-        if (mainHistory.length === 0) startTime = Date.now();
-        const pos = getPos(e);
-        fsCtx.beginPath(); fsCtx.moveTo(pos.x, pos.y);
-        fsCtx.lineWidth = currentLineWidth;
-        fsCtx.strokeStyle = isEraserMode ? '#05070c' : '#3b82f6';
-        currentFsStroke = [{ type: 'start', x: pos.x, y: pos.y, t: Date.now() - startTime, isEraser: isEraserMode, width: currentLineWidth }];
-      }
-
-      function move(e) {
-        if (!isFsDrawing) return;
-        e.preventDefault();
-        const pos = getPos(e);
-        fsCtx.lineTo(pos.x, pos.y); fsCtx.stroke();
-        currentFsStroke.push({ type: 'move', x: pos.x, y: pos.y, t: Date.now() - startTime });
-      }
-
-      function end() {
-        if (isFsDrawing) {
-          isFsDrawing = false;
-          if (currentFsStroke.length > 0) {
-            mainHistory.push(currentFsStroke);
-            saveDraft();
-          }
-        }
-      }
-
-      fsCanvas.addEventListener('mousedown', start); fsCanvas.addEventListener('mousemove', move); fsCanvas.addEventListener('mouseup', end);
-      fsCanvas.addEventListener('touchstart', start); fsCanvas.addEventListener('touchmove', move); fsCanvas.addEventListener('touchend', end);
-    }
-
-    function clearFsCanvas() {
-      if (fsCtx) fsCtx.clearRect(0, 0, fsCanvas.width, fsCanvas.height);
-      clearMainCanvas();
-    }
-
-    function closeFullscreenDraw() {
-      closeModal('fullscreenDrawModal');
-      if (mainHistory.length > 0) {
-        playStrokeAnimation('mainCanvas', mainHistory, '#3b82f6');
-      }
-    }
-
-    function openViewPostModal(postId) {
-      const target = posts.find(p => p.id === postId);
-      if (!target) return;
-
-      document.getElementById('viewPostHeaderTitle').innerText = `🔍 ${target.author} さんの投稿`;
-      document.getElementById('viewPostModal').style.display = 'flex';
-
-      const container = document.getElementById('viewPostCanvasContainer');
-      const cvs = document.getElementById('viewPostCanvas');
-      cvs.width = container.clientWidth;
-      cvs.height = container.clientHeight;
-
-      const bgImg = document.getElementById('viewPostBgImage');
-      if (target.image) {
-        bgImg.src = target.image;
-        bgImg.style.display = 'block';
-      } else {
-        bgImg.src = '';
-        bgImg.style.display = 'none';
-      }
-
-      playStrokeAnimation('viewPostCanvas', target.strokes, '#3b82f6');
-
-      document.getElementById('viewPostReplayBtn').onclick = function() {
-        playStrokeAnimation('viewPostCanvas', target.strokes, '#3b82f6');
-      };
-    }
-
-    function clearMainCanvas() {
-      mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-      mainHistory = [];
-      attachedImageData = null;
-      clearDraft();
-      const bgImg = document.getElementById('mainBgImage');
-      if (bgImg) { bgImg.src = ''; bgImg.style.display = 'none'; }
-      const fsBg = document.getElementById('fsBgImage');
-      if (fsBg) { fsBg.src = ''; fsBg.style.display = 'none'; }
-      const fileInp = document.getElementById('imageInput');
-      if (fileInp) fileInp.value = '';
-    }
-
-    function replayMainCanvas() {
-      if (mainHistory.length === 0) return;
-      playStrokeAnimation('mainCanvas', mainHistory, '#3b82f6');
-    }
-
-    function submitMainPost() {
-      if (mainHistory.length === 0 && !attachedImageData) {
-        alert('メッセージまたは画像を追加してください。'); return;
-      }
+    function submitPost() {
+      if(history.length===0 && !imgData){ alert('入力してください'); return; }
       const now = new Date();
-      const newPost = {
-        id: 'P_' + Date.now(),
-        timestamp: now.getTime(),
-        author: getUserName(),
-        userId: getOrCreateDeviceId(),
+      posts.unshift({
+        id: 'P_'+Date.now(), ts: now.getTime(), author: uName(), uid: getDevId(),
         time: `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
-        strokes: mainHistory,
-        image: attachedImageData,
-        reactions: { '👍': 0, '👌': 0, '🙏': 0 },
-        replies: []
-      };
-
-      posts.unshift(newPost);
-      saveLocalPosts();
-      clearMainCanvas();
-      renderTimeline();
-    }
-
-    function timeAgo(timestamp) {
-      if (!timestamp) return '';
-      const diffMin = Math.floor((Date.now() - timestamp) / 60000);
-      if (diffMin < 1) return 'たった今';
-      if (diffMin < 60) return `${diffMin}分前`;
-      const diffHour = Math.floor(diffMin / 60);
-      if (diffHour < 24) return `${diffHour}時間前`;
-      const diffDay = Math.floor(diffHour / 24);
-      return `${diffDay}日前`;
-    }
-
-    function renderTimelineTimeAgo() {
-      document.querySelectorAll('.time-ago-label').forEach(el => {
-        const ts = el.getAttribute('data-ts');
-        if (ts) el.innerText = timeAgo(Number(ts));
+        strokes: history, image: imgData, replies: []
       });
+      saveP(); clearCvs(); renderTL();
     }
 
-    function playStrokeAnimation(canvasId, strokeHistory, strokeColor = '#3b82f6') {
-      const cvs = document.getElementById(canvasId);
-      if (!cvs) return;
-      const c = cvs.getContext('2d');
-      if (activeAnimTimers[canvasId]) cancelAnimationFrame(activeAnimTimers[canvasId]);
-
-      c.clearRect(0, 0, cvs.width, cvs.height);
-      c.lineCap = 'round';
-
-      let allPoints = [];
-      strokeHistory.forEach(s => { allPoints = allPoints.concat(s); });
-      if (allPoints.length === 0) return;
-
-      let idx = 0;
-      const startT = Date.now();
-
+    function playAnim(cvsId, hist, col='#3b82f6') {
+      const cvs = document.getElementById(cvsId); if(!cvs) return; const c = cvs.getContext('2d');
+      c.clearRect(0,0,cvs.width,cvs.height); c.lineCap='round';
+      let pts = []; hist.forEach(s => pts=pts.concat(s)); if(pts.length===0) return;
+      let idx=0, st=Date.now();
       function step() {
-        const elapsed = Date.now() - startT;
-        while (idx < allPoints.length && allPoints[idx].t <= elapsed) {
-          const pt = allPoints[idx];
-          if (pt.type === 'start') {
-            c.beginPath(); c.moveTo(pt.x, pt.y);
-            c.lineWidth = pt.width || 3.5;
-            c.strokeStyle = pt.isEraser ? '#05070c' : strokeColor;
-          } else if (pt.type === 'move') {
-            c.lineTo(pt.x, pt.y); c.stroke();
-          }
+        let el = Date.now()-st;
+        while(idx<pts.length && pts[idx].t<=el){
+          let p=pts[idx];
+          if(p.type==='start'){ c.beginPath(); c.moveTo(p.x,p.y); c.lineWidth=p.w||3.5; c.strokeStyle=p.erase?'#05070c':col; }
+          else if(p.type==='move'){ c.lineTo(p.x,p.y); c.stroke(); }
           idx++;
         }
-        if (idx < allPoints.length) {
-          activeAnimTimers[canvasId] = requestAnimationFrame(step);
-        }
+        if(idx<pts.length) requestAnimationFrame(step);
       }
-      activeAnimTimers[canvasId] = requestAnimationFrame(step);
+      requestAnimationFrame(step);
     }
 
-    function deleteMyPost(postId) {
-      if (confirm('この投稿を削除しますか？')) {
-        posts = posts.filter(p => p.id !== postId);
-        saveLocalPosts();
-        renderTimeline();
-      }
+    function timeAgo(ts) {
+      if(!ts) return ''; const m = Math.floor((Date.now()-ts)/60000);
+      if(m<1) return 'たった今'; if(m<60) return `${m}分前`;
+      const h = Math.floor(m/60); if(h<24) return `${h}時間前`;
+      return `${Math.floor(h/24)}日前`;
     }
 
-    function deleteMyReply(postId, replyId) {
-      if (confirm('このコメントを削除しますか？')) {
-        const targetPost = posts.find(p => p.id === postId);
-        if (targetPost && targetPost.replies) {
-          targetPost.replies = targetPost.replies.filter(r => r.id !== replyId);
-          saveLocalPosts();
-          renderTimeline();
-        }
-      }
-    }
-
-    function renderTimeline() {
-      const container = document.getElementById('timelineContainer');
-      const recentPosts = posts.slice(0, 7);
-      const myId = getOrCreateDeviceId();
-
-      if (recentPosts.length === 0) {
-        container.innerHTML = '<p style="color:var(--sub-text); font-size:0.8rem;">まだ投稿がありません。</p>';
-        return;
-      }
-
-      container.innerHTML = recentPosts.map((post) => {
-        const canvasId = 'postCvs_' + post.id;
-        const repliesCount = (post.replies || []).length;
-        const userColor = generateVisibleColor(post.userId || 'GUEST');
-        const isMyPost = post.userId === myId;
-        const agoText = timeAgo(post.timestamp);
-
-        let repliesHtml = (post.replies || []).map(r => {
-          const rColor = generateVisibleColor(r.userId || 'GUEST');
-          const isMyReply = r.userId === myId;
-          const delReplyBtn = isMyReply ? `<button class="del-btn-sm" onclick="deleteMyReply('${post.id}', '${r.id}')">削除</button>` : '';
-
-          if (r.strokes) {
-            const rCvsId = 'replyCvs_' + r.id;
-            setTimeout(() => playStrokeAnimation(rCvsId, r.strokes, '#3b82f6'), 100);
-            return `<div class="reply-item">
-              <div class="reply-header">
-                <span style="font-size:0.75rem;"><strong style="color:${rColor};">${r.author}</strong><span class="user-id-badge" style="color:${rColor};">(${r.userId || 'GUEST'})</span> • <span style="color:var(--sub-text);">${r.time}</span></span>
-                ${delReplyBtn}
-              </div>
-              <div style="height:70px; width:100%; position:relative; background:#05070c; border-radius:4px; margin-top:4px; overflow:hidden; border:1px solid var(--reply-blue);">
-                <canvas id="${rCvsId}"></canvas>
-              </div>
-            </div>`;
-          } else {
-            return `<div class="reply-item">
-              <div class="reply-header">
-                <span style="font-size:0.75rem;"><strong style="color:${rColor};">${r.author}</strong><span class="user-id-badge" style="color:${rColor};">(${r.userId || 'GUEST'})</span> <span style="font-size:0.65rem; color:var(--sub-text);">(${r.time})</span></span>
-                ${delReplyBtn}
-              </div>
-              <div class="reply-text-content">${r.text}</div>
-            </div>`;
-          }
-        }).join('');
-
-        setTimeout(() => playStrokeAnimation(canvasId, post.strokes, '#3b82f6'), 100);
-
-        const shouldCollapse = repliesCount >= 3;
-        const delPostBtn = isMyPost ? `<button class="del-btn-sm" onclick="deleteMyPost('${post.id}')">削除</button>` : '';
-
-        return `
-          <div class="post-card">
-            <div class="post-header">
-              <span class="author-tag" style="color:${userColor};">
-                ${post.author}<span class="user-id-badge" style="color:${userColor};">(${post.userId || 'GUEST'})</span>
-              </span>
-              <div>
-                <span class="time-ago-label" data-ts="${post.timestamp || ''}" style="margin-right:4px; font-weight:bold; color:var(--primary);">${agoText}</span>
-                <span style="margin-right:6px; opacity:0.8;">(${post.time})</span>
-                ${delPostBtn}
-              </div>
-            </div>
-            <div class="post-body" onclick="openViewPostModal('${post.id}')">
-              ${post.image ? `<img src="${post.image}" class="bg-image-preview">` : ''}
-              <canvas id="${canvasId}"></canvas>
-            </div>
-            <div class="reaction-bar">
-              <button class="react-btn" onclick="addReaction('${post.id}', '👍')">👍 ${post.reactions ? (post.reactions['👍'] || 0) : 0}</button>
-              <button class="react-btn" onclick="addReaction('${post.id}', '👌')">👌 ${post.reactions ? (post.reactions['👌'] || 0) : 0}</button>
-              <button class="react-btn" onclick="addReaction('${post.id}', '🙏')">🙏 ${post.reactions ? (post.reactions['🙏'] || 0) : 0}</button>
-              <button class="react-btn" onclick="triggerReplay('${post.id}')">▶ 再生</button>
-              <button class="react-btn" style="color:var(--reply-blue); border-color:var(--reply-blue);" onclick="openReplyModal('${post.id}')">💬 返信</button>
-            </div>
-            
-            ${repliesCount > 0 ? `
-              <button class="toggle-reply-btn" onclick="toggleReplies('${post.id}')">
-                💬 コメントを見る (${repliesCount}件) ${shouldCollapse ? '▼' : '▲'}
-              </button>
-              <div class="replies-container ${shouldCollapse ? '' : 'open'}" id="replies_${post.id}">
-                ${repliesHtml}
-              </div>
-            ` : ''}
+    function renderTL() {
+      const c = document.getElementById('timeline'); const r = posts.slice(0,7);
+      if(r.length===0){ c.innerHTML='<p style="color:var(--sub); font-size:0.75rem;">投稿はありません</p>'; return; }
+      c.innerHTML = r.map(p => {
+        const cid = 'cvs_'+p.id; setTimeout(()=>playAnim(cid, p.strokes), 50);
+        const my = p.uid === getDevId();
+        return `<div class="post">
+          <div class="p-head">
+            <span style="font-weight:bold; color:${col=getCol(p.uid)};">${p.author}</span>
+            <div><span style="color:var(--primary); font-weight:bold;">${timeAgo(p.ts)}</span> (${p.time}) ${my?`<button class="del" onclick="delP('${p.id}')">削除</button>`:''}</div>
           </div>
-        `;
+          <div class="p-body" onclick="openView('${p.id}')">
+            ${p.image?`<img src="${p.image}" class="bg-img">`:''}<canvas id="${cid}"></canvas>
+          </div>
+        </div>`;
       }).join('');
     }
 
-    function toggleReplies(postId) {
-      const el = document.getElementById('replies_' + postId);
-      if (el) el.classList.toggle('open');
+    function openView(id) {
+      const p = posts.find(x => x.id===id); if(!p) return;
+      document.getElementById('vTitle').innerText = `${p.author} さんの投稿`;
+      document.getElementById('viewModal').style.display = 'flex';
+      setTimeout(()=>{
+        vCvs = document.getElementById('vCvs'); const w = document.getElementById('vWrap');
+        vCvs.width=w.clientWidth; vCvs.height=w.clientHeight;
+        let bg=document.getElementById('vBg'); if(p.image){bg.src=p.image;bg.style.display='block';}else{bg.style.display='none';}
+        playAnim('vCvs', p.strokes);
+        document.getElementById('vRep').onclick = () => playAnim('vCvs', p.strokes);
+      },50);
     }
 
-    function triggerReplay(postId) {
-      const target = posts.find(p => p.id === postId);
-      if (target) playStrokeAnimation('postCvs_' + postId, target.strokes, '#3b82f6');
+    function delP(id) { if(confirm('削除しますか？')){ posts=posts.filter(x=>x.id!==id); saveP(); renderTL(); } }
+
+    /* PIN & Deposit */
+    function openPin() { pinStrVal=""; updPin(); document.getElementById('pinModal').style.display='flex'; }
+    function pKey(k) {
+      if(k==='C') pinStrVal=""; else if(k==='OK'){
+        if(pinStrVal==='1225'){ closeModal('pinModal'); openDep(); } else { alert('違います'); pinStrVal=""; }
+      } else if(pinStrVal.length<4) pinStrVal+=k;
+      updPin();
+    }
+    function updPin() { let s=""; for(let i=0;i<4;i++) s+=i<pinStrVal.length?'●':'-'; document.getElementById('pinStr').innerText=s; }
+    function openDep() { document.getElementById('depModal').style.display='flex'; renderDTabs(); renderDTL(); }
+
+    function dImgSel(e) {
+      const f=e.target.files[0]; if(!f) return;
+      const r=new FileReader(); r.onload=ev=>{
+        const img=new Image(); img.onload=()=>{
+          const c=document.createElement('canvas'); let w=img.width, h=img.height;
+          if(w>800){h*=800/w;w=800;} c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h);
+          dImgData=c.toDataURL('image/jpeg',0.8);
+          document.getElementById('dPrev').src=dImgData; document.getElementById('dPrevC').style.display='block';
+        }; img.src=ev.target.result;
+      }; r.readAsDataURL(f);
     }
 
-    function addReaction(postId, emoji) {
-      const target = posts.find(p => p.id === postId);
-      if (target) {
-        if (!target.reactions) target.reactions = {};
-        target.reactions[emoji] = (target.reactions[emoji] || 0) + 1;
-        saveLocalPosts();
-        renderTimeline();
+    function dSub() {
+      const amt=document.getElementById('dAmt').value, cli=document.getElementById('dCli').value, stf=document.getElementById('dStf').value||'未割当';
+      if(!amt||!cli){alert('金額と顧客名を入力');return;}
+      const now=new Date();
+      deps.unshift({ id:'D_'+Date.now(), amt:Number(amt).toLocaleString()+'円', cli, stf, author:uName(), uid:getDevId(), time:`${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`, img:dImgData });
+      localStorage.setItem('V_DEPS', JSON.stringify(deps));
+      document.getElementById('dAmt').value=''; document.getElementById('dCli').value=''; document.getElementById('dStf').value=''; dImgData=null; document.getElementById('dPrevC').style.display='none';
+      renderDTabs(); renderDTL();
+    }
+
+    function renderDTabs() {
+      const staffs = ['すべて', ...new Set(deps.map(d=>d.stf))];
+      document.getElementById('dTabs').innerHTML = staffs.map(s => `<button class="tbtn ${curTab===s?'active':''}" onclick="curTab='${s}';renderDTabs();renderDTL();">${s}</button>`).join('');
+    }
+
+    function renderDTL() {
+      const f = curTab==='すべて'?deps:deps.filter(d=>d.stf===curTab);
+      document.getElementById('dTL').innerHTML = f.length===0?'<p style="color:var(--sub);font-size:0.75rem;">データなし</p>':f.map(d=>`
+        <div class="post" style="border-color:var(--green);">
+          <div class="p-head"><span style="color:var(--green); font-weight:bold;">💰 ${d.amt} (${d.time})</span> ${d.uid===getDevId()?`<button class="del" onclick="delD('${d.id}')">削除</button>`:''}</div>
+          <div style="font-size:0.75rem;">顧客: ${d.cli} / 担当: <strong style="color:var(--primary);">${d.stf}</strong></div>
+          ${d.img?`<div style="height:90px;background:#05070c;border-radius:4px;overflow:hidden;"><img src="${d.img}" style="width:100%;height:100%;object-fit:contain;"></div>`:''}
+        </div>`).join('');
+    }
+    function delD(id) { if(confirm('削除しますか？')){ deps=deps.filter(x=>x.id!==id); localStorage.setItem('V_DEPS', JSON.stringify(deps)); renderDTabs(); renderDTL(); } }
+
+    /* Calendar */
+    function renderCal() {
+      const now = new Date(), y=now.getFullYear(), m=now.getMonth();
+      document.getElementById('calM').innerText = `${y}年 ${m+1}月`;
+      const fd = new Date(y,m,1).getDay(), days = new Date(y,m+1,0).getDate();
+      let b = ''; for(let i=0;i<fd;i++) b+='<div></div>';
+      let todayStr = `${y}-${String(m+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`, hasEv=false;
+      for(let d=1;d<=days;d++){
+        let ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        let ev=events.some(e=>e.date===ds); if(ev && ds===todayStr) hasEv=true;
+        b+=`<div class="c-cell ${d===now.getDate()?'today':''}" onclick="document.getElementById('eDate').value='${ds}';openEvt();">${d}${ev?'<div class="dot"></div>':''}</div>`;
       }
+      document.getElementById('calB').innerHTML=b;
+      document.getElementById('gBadge').style.display = hasEv?'inline-block':'none';
+    }
+    function openEvt() { document.getElementById('evtModal').style.display='flex'; renderEvtList(); }
+    function saveEvt(e) {
+      const dt=document.getElementById('eDate').value, tl=document.getElementById('eTitle').value;
+      if(!dt||!tl) return; events.push({id:'E_'+Date.now(), date:dt, title:tl});
+      localStorage.setItem('V_EVTS', JSON.stringify(events)); document.getElementById('eTitle').value=''; renderEvtList(); renderCal();
+    }
+    function renderEvtList() {
+      document.getElementById('eList').innerHTML = events.map(e=>`<div style="background:#05070c;padding:4px;border-radius:4px;font-size:0.7rem;display:flex;justify-content:space-between;"><span>${e.date}: ${e.title}</span><button class="del" onclick="events=events.filter(x=>x.id!=='${e.id}');localStorage.setItem('V_EVTS',JSON.stringify(events));renderEvtList();renderCal();">削除</button></div>`).join('');
     }
 
-    function openReplyModal(postId) {
-      activeReplyPostId = postId;
-      document.getElementById('replyTextInput').value = '';
-      document.getElementById('replyDrawModal').style.display = 'flex';
-      setTimeout(initReplyCanvas, 150);
-    }
-
-    function submitTextReply() {
-      const text = document.getElementById('replyTextInput').value.trim();
-      if (!text) return;
-      const target = posts.find(p => p.id === activeReplyPostId);
-      if (target) {
-        if (!target.replies) target.replies = [];
-        const now = new Date();
-        target.replies.push({
-          id: 'R_' + Date.now(),
-          author: getUserName(),
-          userId: getOrCreateDeviceId(),
-          time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
-          text: text
-        });
-        saveLocalPosts();
-        closeModal('replyDrawModal');
-        renderTimeline();
-        setTimeout(() => {
-          const el = document.getElementById('replies_' + activeReplyPostId);
-          if (el) el.classList.add('open');
-        }, 150);
-      }
-    }
-
-    function initReplyCanvas() {
-      const container = document.getElementById('replyCanvasContainer');
-      replyCanvas = document.getElementById('replyCanvas');
-      replyCanvas.width = container.clientWidth;
-      replyCanvas.height = container.clientHeight;
-      replyCtx = replyCanvas.getContext('2d');
-      replyCtx.lineWidth = 3; replyCtx.lineCap = 'round'; replyCtx.strokeStyle = '#3b82f6';
-      replyHistory = [];
-
-      function getPos(e) {
-        const rect = replyCanvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: clientX - rect.left, y: clientY - rect.top };
-      }
-
-      function start(e) {
-        isReplyDrawing = true;
-        if (replyHistory.length === 0) replyStartTime = Date.now();
-        const pos = getPos(e);
-        replyCtx.beginPath(); replyCtx.moveTo(pos.x, pos.y);
-        currentReplyStroke = [{ type: 'start', x: pos.x, y: pos.y, t: Date.now() - replyStartTime }];
-      }
-
-      function move(e) {
-        if (!isReplyDrawing) return;
-        e.preventDefault();
-        const pos = getPos(e);
-        replyCtx.lineTo(pos.x, pos.y); replyCtx.stroke();
-        currentReplyStroke.push({ type: 'move', x: pos.x, y: pos.y, t: Date.now() - replyStartTime });
-      }
-
-      function end() {
-        if (isReplyDrawing) {
-          isReplyDrawing = false;
-          if (currentReplyStroke.length > 0) replyHistory.push(currentReplyStroke);
-        }
-      }
-
-      replyCanvas.addEventListener('mousedown', start); replyCanvas.addEventListener('mousemove', move); replyCanvas.addEventListener('mouseup', end);
-      replyCanvas.addEventListener('touchstart', start); replyCanvas.addEventListener('touchmove', move); replyCanvas.addEventListener('touchend', end);
-    }
-
-    function clearReplyCanvas() {
-      if (replyCtx) replyCtx.clearRect(0, 0, replyCanvas.width, replyCanvas.height);
-      replyHistory = [];
-    }
-
-    function replayReplyCanvas() {
-      if (replyHistory.length === 0) return;
-      playStrokeAnimation('replyCanvas', replyHistory, '#3b82f6');
-    }
-
-    function submitReplyDraw() {
-      if (replyHistory.length === 0) return;
-      const target = posts.find(p => p.id === activeReplyPostId);
-      if (target) {
-        if (!target.replies) target.replies = [];
-        const now = new Date();
-        target.replies.push({
-          id: 'R_' + Date.now(),
-          author: getUserName(),
-          userId: getOrCreateDeviceId(),
-          time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
-          strokes: replyHistory
-        });
-        saveLocalPosts();
-        closeModal('replyDrawModal');
-        clearReplyCanvas();
-        renderTimeline();
-        setTimeout(() => {
-          const el = document.getElementById('replies_' + activeReplyPostId);
-          if (el) el.classList.add('open');
-        }, 150);
-      }
-    }
-
-    function openArchiveModal() {
-      document.getElementById('archiveModal').style.display = 'flex';
-      const container = document.getElementById('archiveContainer');
-      const archivePosts = posts.slice(7);
-      const myId = getOrCreateDeviceId();
-
-      if (archivePosts.length === 0) {
-        container.innerHTML = '<p style="color:var(--sub-text); font-size:0.8rem;">8件目以降の過去投稿はまだありません。</p>';
-        return;
-      }
-
-      container.innerHTML = archivePosts.map((post) => {
-        const canvasId = 'archCvs_' + post.id;
-        const userColor = generateVisibleColor(post.userId || 'GUEST');
-        const isMyPost = post.userId === myId;
-        const delPostBtn = isMyPost ? `<button class="del-btn-sm" onclick="deleteMyPost('${post.id}')">削除</button>` : '';
-
-        setTimeout(() => playStrokeAnimation(canvasId, post.strokes, '#3b82f6'), 100);
-        return `
-          <div class="post-card">
-            <div class="post-header">
-              <strong style="color:${userColor};">${post.author}<span class="user-id-badge" style="color:${userColor};">(${post.userId || 'GUEST'})</span></strong>
-              <div>
-                <span style="margin-right:6px;">${post.time}</span>
-                ${delPostBtn}
-              </div>
-            </div>
-            <div class="post-body" onclick="openViewPostModal('${post.id}')">
-              ${post.image ? `<img src="${post.image}" class="bg-image-preview">` : ''}
-              <canvas id="${canvasId}"></canvas>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function renderCalendar() {
-      const now = new Date();
-      const year = now.getFullYear(); const month = now.getMonth();
-      document.getElementById('calMonth').innerText = `${year}年 ${month + 1}月`;
-
-      const firstDay = new Date(year, month, 1).getDay();
-      const totalDays = new Date(year, month + 1, 0).getDate();
-      const body = document.getElementById('calBody');
-      body.innerHTML = '';
-
-      let hasTodayEvent = false;
-      const todayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-
-      for (let i = 0; i < firstDay; i++) { body.appendChild(document.createElement('div')); }
-
-      for (let day = 1; day <= totalDays; day++) {
-        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-        const cell = document.createElement('div');
-        cell.className = 'cal-cell';
-        if (day === now.getDate()) cell.classList.add('today');
-        cell.innerText = day;
-
-        const hasEv = events.some(e => e.date === dateStr);
-        if (hasEv) {
-          const dot = document.createElement('div'); dot.className = 'event-dot'; cell.appendChild(dot);
-          if (dateStr === todayStr) hasTodayEvent = true;
-        }
-
-        cell.onclick = () => {
-          document.getElementById('evtDate').value = dateStr;
-          openAddEventModal();
-        };
-        body.appendChild(cell);
-      }
-
-      const eventBadge = document.getElementById('todayEventBadge');
-      if (eventBadge) eventBadge.style.display = hasTodayEvent ? 'inline-block' : 'none';
-    }
-
-    function openAddEventModal() {
-      if (!document.getElementById('evtDate').value) {
-        document.getElementById('evtDate').value = new Date().toISOString().split('T')[0];
-      }
-      document.getElementById('eventModal').style.display = 'flex';
-      renderEventList();
-    }
-
-    function saveEvent(e) {
-      e.preventDefault();
-      const date = document.getElementById('evtDate').value;
-      const title = document.getElementById('evtTitle').value;
-      events.push({ id: 'E_' + Date.now(), date: date, title: title });
-      localStorage.setItem('VIL_CANVAS_EVENTS', JSON.stringify(events));
-      document.getElementById('evtTitle').value = '';
-      closeModal('eventModal');
-      renderCalendar();
-    }
-
-    function deleteEvent(eventId) {
-      events = events.filter(e => e.id !== eventId);
-      localStorage.setItem('VIL_CANVAS_EVENTS', JSON.stringify(events));
-      renderEventList();
-      renderCalendar();
-    }
-
-    function renderEventList() {
-      const container = document.getElementById('eventListContainer');
-      if (events.length === 0) {
-        container.innerHTML = '<p style="color:var(--sub-text); font-size:0.75rem;">登録されている予定はありません。</p>';
-        return;
-      }
-      container.innerHTML = events.map(e => `
-        <div style="background:#05070c; padding:6px 10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center; font-size:0.8rem;">
-          <span><strong>${e.date}</strong>: ${e.title}</span>
-          <button class="icon-btn" style="color:var(--accent-red);" onclick="deleteEvent('${e.id}')">削除</button>
-        </div>
-      `).join('');
-    }
-
-    function autoSyncData() {
-      fetch(GAS_WEB_APP_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ posts: posts, events: events })
-      })
-      .then(res => res.json())
-      .then(res => {
-        if (res.posts && res.posts.length !== posts.length) {
-          posts = res.posts;
-          saveLocalPosts();
-          renderTimeline();
-          document.getElementById('globalNewBadge').style.display = 'inline-block';
-          sendPushNotification("新着投稿あり", "手書き掲示板に新しい投稿が届きました！");
-        }
-      })
-      .catch(() => {});
-    }
-
-    function saveLocalPosts() {
-      localStorage.setItem('VIL_CANVAS_POSTS_V16', JSON.stringify(posts));
-    }
-
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-    function requestNotificationPermission() {
-      if ('Notification' in window) {
-        Notification.requestPermission().then(permission => {
-          if (permission === 'granted') alert('通知をオンにしました！');
-          else alert('通知がブロックされました。');
-        });
-      }
-    }
-
-    function sendPushNotification(title, body) {
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(title, { body: body, icon: '✍️' });
-      }
-    }
+    function saveName() { let n=document.getElementById('nInp').value.trim(); if(n){ localStorage.setItem('V_NAME', n); updAuthor(); closeModal('nameModal'); } }
+    function saveP() { localStorage.setItem('V_POSTS', JSON.stringify(posts)); }
+    function closeModal(id) { document.getElementById(id).style.display='none'; }
+    function openModal(id) { document.getElementById(id).style.display='flex'; }
   </script>
 </body>
 </html>
