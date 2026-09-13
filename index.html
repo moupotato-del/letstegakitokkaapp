@@ -66,6 +66,9 @@
       background: var(--accent-red); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; font-weight: bold;
       animation: blink 1.5s infinite; display: none;
     }
+    .event-badge {
+      background: var(--primary); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; display: none;
+    }
     @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
     .header-btns { display: flex; gap: 4px; align-items: center; }
@@ -94,15 +97,14 @@
     .btn-action {
       background: #222d45; color: var(--text); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; font-weight: bold; font-size: 0.8rem; cursor: pointer;
     }
+    .btn-action.active { background: var(--primary); color: white; border-color: var(--primary); }
     .btn-submit-lg {
       background: var(--primary); color: #ffffff; border: none; padding: 10px 20px; border-radius: 10px;
       font-weight: 900; font-size: 0.95rem; cursor: pointer; box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3); margin-left: auto;
     }
     .btn-submit-lg:active { transform: scale(0.97); }
 
-    .image-note {
-      font-size: 0.7rem; color: var(--sub-text); margin-top: -4px; margin-bottom: 2px;
-    }
+    .image-note { font-size: 0.7rem; color: var(--sub-text); margin-top: -4px; margin-bottom: 2px; }
 
     /* BBS Cards */
     .post-card {
@@ -181,10 +183,12 @@
   <div class="app-container">
     <header>
       <div class="brand">
-        VIL CANVAS <span class="new-badge" id="globalNewBadge">NEW</span>
+        VIL CANVAS 
+        <span class="new-badge" id="globalNewBadge">NEW</span>
+        <span class="event-badge" id="todayEventBadge">📅 本日の予定あり</span>
       </div>
       <div class="header-btns">
-        <button class="icon-btn" onclick="openNameModal()">👤 名前変更</button>
+        <button class="icon-btn" onclick="openNameModal()">👤 名前</button>
         <button class="icon-btn" onclick="requestNotificationPermission()">🔔 通知</button>
         <button class="icon-btn" onclick="openArchiveModal()">📜 過去ログ</button>
       </div>
@@ -201,16 +205,17 @@
           <img id="mainBgImage" class="bg-image-preview" style="display:none;">
           <canvas id="mainCanvas"></canvas>
         </div>
-        <div class="image-note">ℹ️ ※選択した画像は投稿しやすいサイズに自動で最適化（リサイズ）されます。</div>
+        <div class="image-note">ℹ️ ※選択した画像は投稿しやすいサイズに自動で最適化されます。</div>
         <div class="canvas-tools">
           <label class="btn-action" style="cursor:pointer; display:flex; align-items:center; gap:4px;">
-            📷 画像を選択
+            📷 画像
             <input type="file" id="imageInput" accept="image/*" style="display:none;" onchange="handleImageSelect(event)">
           </label>
-          <button class="btn-action" onclick="openFullscreenDraw()">⛶ 全画面入力</button>
+          <button class="btn-action" id="penSizeBtn" onclick="togglePenSize()">✏️ 細め</button>
+          <button class="btn-action" id="eraserBtn" onclick="toggleEraser()">🧹 消しゴム</button>
+          <button class="btn-action" onclick="openFullscreenDraw()">⛶ 全画面</button>
           <button class="btn-action" onclick="clearMainCanvas()">クリア</button>
-          <button class="btn-action" onclick="replayMainCanvas()">▶ プレビュー</button>
-          <button class="btn-submit-lg" onclick="submitMainPost()">投稿（送信）</button>
+          <button class="btn-submit-lg" onclick="submitMainPost()">投稿</button>
         </div>
       </section>
 
@@ -421,7 +426,7 @@
       closeModal('nameModal');
     }
 
-    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V15')) || [];
+    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V16')) || [];
     let events = JSON.parse(localStorage.getItem('VIL_CANVAS_EVENTS')) || [];
     let activeReplyPostId = null;
     let activeAnimTimers = {};
@@ -431,15 +436,69 @@
     let fsCanvas, fsCtx, isFsDrawing = false, currentFsStroke = [];
     let replyCanvas, replyCtx, isReplyDrawing = false, currentReplyStroke = [], replyHistory = [], replyStartTime = 0;
 
+    let currentLineWidth = 3.5;
+    let isEraserMode = false;
+
     window.onload = function() {
       updateAuthorDisplay();
       initMainCanvas();
+      loadDraft();
       renderTimeline();
       renderCalendar();
       setInterval(autoSyncData, 5000);
+      setInterval(renderTimelineTimeAgo, 60000); // 1分ごとに経過時間を更新
     };
 
-    /* --- 自動リサイズ付き画像選択処理 --- */
+    function togglePenSize() {
+      isEraserMode = false;
+      document.getElementById('eraserBtn').classList.remove('active');
+      currentLineWidth = (currentLineWidth === 3.5) ? 2.0 : 3.5;
+      const btn = document.getElementById('penSizeBtn');
+      btn.innerText = currentLineWidth === 3.5 ? '✏️ 細め' : '✏️ 極細';
+      btn.classList.toggle('active', currentLineWidth === 2.0);
+      if (mainCtx) mainCtx.strokeStyle = '#3b82f6';
+    }
+
+    function toggleEraser() {
+      isEraserMode = !isEraserMode;
+      const btn = document.getElementById('eraserBtn');
+      btn.classList.toggle('active', isEraserMode);
+      if (isEraserMode) {
+        document.getElementById('penSizeBtn').classList.remove('active');
+        currentLineWidth = 12.0;
+      } else {
+        currentLineWidth = 3.5;
+      }
+    }
+
+    /* --- オートセーブ（下書き保存・復元） --- */
+    function saveDraft() {
+      const draft = { history: mainHistory, image: attachedImageData };
+      localStorage.setItem('VIL_CANVAS_DRAFT', JSON.stringify(draft));
+    }
+
+    function loadDraft() {
+      const saved = localStorage.getItem('VIL_CANVAS_DRAFT');
+      if (saved) {
+        try {
+          const draft = JSON.parse(saved);
+          if (draft.history && draft.history.length > 0) {
+            mainHistory = draft.history;
+            playStrokeAnimation('mainCanvas', mainHistory, '#3b82f6');
+          }
+          if (draft.image) {
+            attachedImageData = draft.image;
+            const bgImg = document.getElementById('mainBgImage');
+            if (bgImg) { bgImg.src = attachedImageData; bgImg.style.display = 'block'; }
+          }
+        } catch(e) {}
+      }
+    }
+
+    function clearDraft() {
+      localStorage.removeItem('VIL_CANVAS_DRAFT');
+    }
+
     function handleImageSelect(e) {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
@@ -449,46 +508,26 @@
         const img = new Image();
         img.onload = function() {
           const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
+          let width = img.width; let height = img.height;
           const MAX_SIZE = 1024;
-
           if (width > height) {
-            if (width > MAX_SIZE) {
-              height *= MAX_SIZE / width;
-              width = MAX_SIZE;
-            }
+            if (width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; }
           } else {
-            if (height > MAX_SIZE) {
-              width *= MAX_SIZE / height;
-              height = MAX_SIZE;
-            }
+            if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
           }
-
-          canvas.width = width;
-          canvas.height = height;
+          canvas.width = width; canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          // 圧縮されたBase64データを生成（JPEG品質 0.8）
           attachedImageData = canvas.toDataURL('image/jpeg', 0.8);
 
           const bgImg = document.getElementById('mainBgImage');
-          if (bgImg) {
-            bgImg.src = attachedImageData;
-            bgImg.style.display = 'block';
-          }
-
+          if (bgImg) { bgImg.src = attachedImageData; bgImg.style.display = 'block'; }
           const fsBg = document.getElementById('fsBgImage');
-          if (fsBg) {
-            fsBg.src = attachedImageData;
-            fsBg.style.display = 'block';
-          }
+          if (fsBg) { fsBg.src = attachedImageData; fsBg.style.display = 'block'; }
+          saveDraft();
         };
         img.src = evt.target.result;
-      };
-      reader.onerror = function() {
-        alert('画像の読み込みに失敗しました。');
       };
       reader.readAsDataURL(file);
     }
@@ -500,7 +539,7 @@
       mainCanvas.height = container.clientHeight;
 
       mainCtx = mainCanvas.getContext('2d');
-      mainCtx.lineWidth = 3.5; mainCtx.lineCap = 'round'; mainCtx.strokeStyle = '#3b82f6';
+      mainCtx.lineCap = 'round';
 
       function getPos(e) {
         const rect = mainCanvas.getBoundingClientRect();
@@ -514,7 +553,9 @@
         if (mainHistory.length === 0) startTime = Date.now();
         const pos = getPos(e);
         mainCtx.beginPath(); mainCtx.moveTo(pos.x, pos.y);
-        currentStroke = [{ type: 'start', x: pos.x, y: pos.y, t: Date.now() - startTime }];
+        mainCtx.lineWidth = currentLineWidth;
+        mainCtx.strokeStyle = isEraserMode ? '#05070c' : '#3b82f6';
+        currentStroke = [{ type: 'start', x: pos.x, y: pos.y, t: Date.now() - startTime, isEraser: isEraserMode, width: currentLineWidth }];
       }
 
       function moveDraw(e) {
@@ -528,7 +569,10 @@
       function endDraw() {
         if (isDrawing) {
           isDrawing = false;
-          if (currentStroke.length > 0) mainHistory.push(currentStroke);
+          if (currentStroke.length > 0) {
+            mainHistory.push(currentStroke);
+            saveDraft();
+          }
         }
       }
 
@@ -548,7 +592,7 @@
       fsCanvas.height = container.clientHeight;
 
       fsCtx = fsCanvas.getContext('2d');
-      fsCtx.lineWidth = 4; fsCtx.lineCap = 'round'; fsCtx.strokeStyle = '#3b82f6';
+      fsCtx.lineCap = 'round';
 
       if (mainHistory.length > 0) {
         playStrokeAnimation('fsCanvas', mainHistory, '#3b82f6');
@@ -566,7 +610,9 @@
         if (mainHistory.length === 0) startTime = Date.now();
         const pos = getPos(e);
         fsCtx.beginPath(); fsCtx.moveTo(pos.x, pos.y);
-        currentFsStroke = [{ type: 'start', x: pos.x, y: pos.y, t: Date.now() - startTime }];
+        fsCtx.lineWidth = currentLineWidth;
+        fsCtx.strokeStyle = isEraserMode ? '#05070c' : '#3b82f6';
+        currentFsStroke = [{ type: 'start', x: pos.x, y: pos.y, t: Date.now() - startTime, isEraser: isEraserMode, width: currentLineWidth }];
       }
 
       function move(e) {
@@ -580,7 +626,10 @@
       function end() {
         if (isFsDrawing) {
           isFsDrawing = false;
-          if (currentFsStroke.length > 0) mainHistory.push(currentFsStroke);
+          if (currentFsStroke.length > 0) {
+            mainHistory.push(currentFsStroke);
+            saveDraft();
+          }
         }
       }
 
@@ -632,6 +681,7 @@
       mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
       mainHistory = [];
       attachedImageData = null;
+      clearDraft();
       const bgImg = document.getElementById('mainBgImage');
       if (bgImg) { bgImg.src = ''; bgImg.style.display = 'none'; }
       const fsBg = document.getElementById('fsBgImage');
@@ -649,13 +699,13 @@
       if (mainHistory.length === 0 && !attachedImageData) {
         alert('メッセージまたは画像を追加してください。'); return;
       }
-      const author = getUserName();
-      const userId = getOrCreateDeviceId();
+      const now = new Date();
       const newPost = {
         id: 'P_' + Date.now(),
-        author: author,
-        userId: userId,
-        time: new Date().toLocaleString('ja-JP'),
+        timestamp: now.getTime(),
+        author: getUserName(),
+        userId: getOrCreateDeviceId(),
+        time: `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
         strokes: mainHistory,
         image: attachedImageData,
         reactions: { '👍': 0, '👌': 0, '🙏': 0 },
@@ -668,6 +718,24 @@
       renderTimeline();
     }
 
+    function timeAgo(timestamp) {
+      if (!timestamp) return '';
+      const diffMin = Math.floor((Date.now() - timestamp) / 60000);
+      if (diffMin < 1) return 'たった今';
+      if (diffMin < 60) return `${diffMin}分前`;
+      const diffHour = Math.floor(diffMin / 60);
+      if (diffHour < 24) return `${diffHour}時間前`;
+      const diffDay = Math.floor(diffHour / 24);
+      return `${diffDay}日前`;
+    }
+
+    function renderTimelineTimeAgo() {
+      document.querySelectorAll('.time-ago-label').forEach(el => {
+        const ts = el.getAttribute('data-ts');
+        if (ts) el.innerText = timeAgo(Number(ts));
+      });
+    }
+
     function playStrokeAnimation(canvasId, strokeHistory, strokeColor = '#3b82f6') {
       const cvs = document.getElementById(canvasId);
       if (!cvs) return;
@@ -675,7 +743,7 @@
       if (activeAnimTimers[canvasId]) cancelAnimationFrame(activeAnimTimers[canvasId]);
 
       c.clearRect(0, 0, cvs.width, cvs.height);
-      c.lineWidth = 3.5; c.lineCap = 'round'; c.strokeStyle = strokeColor;
+      c.lineCap = 'round';
 
       let allPoints = [];
       strokeHistory.forEach(s => { allPoints = allPoints.concat(s); });
@@ -688,8 +756,13 @@
         const elapsed = Date.now() - startT;
         while (idx < allPoints.length && allPoints[idx].t <= elapsed) {
           const pt = allPoints[idx];
-          if (pt.type === 'start') { c.beginPath(); c.moveTo(pt.x, pt.y); }
-          else if (pt.type === 'move') { c.lineTo(pt.x, pt.y); c.stroke(); }
+          if (pt.type === 'start') {
+            c.beginPath(); c.moveTo(pt.x, pt.y);
+            c.lineWidth = pt.width || 3.5;
+            c.strokeStyle = pt.isEraser ? '#05070c' : strokeColor;
+          } else if (pt.type === 'move') {
+            c.lineTo(pt.x, pt.y); c.stroke();
+          }
           idx++;
         }
         if (idx < allPoints.length) {
@@ -733,6 +806,7 @@
         const repliesCount = (post.replies || []).length;
         const userColor = generateVisibleColor(post.userId || 'GUEST');
         const isMyPost = post.userId === myId;
+        const agoText = timeAgo(post.timestamp);
 
         let repliesHtml = (post.replies || []).map(r => {
           const rColor = generateVisibleColor(r.userId || 'GUEST');
@@ -774,7 +848,8 @@
                 ${post.author}<span class="user-id-badge" style="color:${userColor};">(${post.userId || 'GUEST'})</span>
               </span>
               <div>
-                <span style="margin-right:6px;">${post.time}</span>
+                <span class="time-ago-label" data-ts="${post.timestamp || ''}" style="margin-right:4px; font-weight:bold; color:var(--primary);">${agoText}</span>
+                <span style="margin-right:6px; opacity:0.8;">(${post.time})</span>
                 ${delPostBtn}
               </div>
             </div>
@@ -836,11 +911,12 @@
       const target = posts.find(p => p.id === activeReplyPostId);
       if (target) {
         if (!target.replies) target.replies = [];
+        const now = new Date();
         target.replies.push({
           id: 'R_' + Date.now(),
           author: getUserName(),
           userId: getOrCreateDeviceId(),
-          time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+          time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
           text: text
         });
         saveLocalPosts();
@@ -911,11 +987,12 @@
       const target = posts.find(p => p.id === activeReplyPostId);
       if (target) {
         if (!target.replies) target.replies = [];
+        const now = new Date();
         target.replies.push({
           id: 'R_' + Date.now(),
           author: getUserName(),
           userId: getOrCreateDeviceId(),
-          time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
+          time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
           strokes: replyHistory
         });
         saveLocalPosts();
@@ -975,6 +1052,9 @@
       const body = document.getElementById('calBody');
       body.innerHTML = '';
 
+      let hasTodayEvent = false;
+      const todayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+
       for (let i = 0; i < firstDay; i++) { body.appendChild(document.createElement('div')); }
 
       for (let day = 1; day <= totalDays; day++) {
@@ -987,6 +1067,7 @@
         const hasEv = events.some(e => e.date === dateStr);
         if (hasEv) {
           const dot = document.createElement('div'); dot.className = 'event-dot'; cell.appendChild(dot);
+          if (dateStr === todayStr) hasTodayEvent = true;
         }
 
         cell.onclick = () => {
@@ -995,6 +1076,9 @@
         };
         body.appendChild(cell);
       }
+
+      const eventBadge = document.getElementById('todayEventBadge');
+      if (eventBadge) eventBadge.style.display = hasTodayEvent ? 'inline-block' : 'none';
     }
 
     function openAddEventModal() {
@@ -1057,7 +1141,7 @@
     }
 
     function saveLocalPosts() {
-      localStorage.setItem('VIL_CANVAS_POSTS_V15', JSON.stringify(posts));
+      localStorage.setItem('VIL_CANVAS_POSTS_V16', JSON.stringify(posts));
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
@@ -1079,3 +1163,4 @@
   </script>
 </body>
 </html>
+
