@@ -6,7 +6,7 @@
   <title>VIL Canvas</title>
   <style>
     :root {
-      --bg: #0b0f19; --card: #151c2c; --primary: #3b82f6; --text: #f9fafb; --sub: #9ca3af; --border: #2a354d; --red: #ef4444; --green: #10b981;
+      --bg: #0b0f19; --card: #151c2c; --primary: #10b981; --text: #f9fafb; --sub: #9ca3af; --border: #2a354d; --red: #ef4444; --green: #10b981; --reply: #3b82f6;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
     html, body { width: 100%; height: 100%; height: 100dvh; overflow: hidden; background: var(--bg); color: var(--text); font-family: sans-serif; }
@@ -16,6 +16,12 @@
     .badge { background: var(--red); color: white; font-size: 0.6rem; padding: 2px 5px; border-radius: 8px; display: none; }
     .btns { display: flex; gap: 3px; }
     .ibtn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 4px 7px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; cursor: pointer; }
+    
+    .date-banner {
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px;
+      font-size: 0.75rem; font-weight: bold; color: var(--sub); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+
     .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
     .c-title { font-size: 0.85rem; font-weight: bold; color: var(--primary); display: flex; justify-content: space-between; }
@@ -29,8 +35,14 @@
     .note { font-size: 0.65rem; color: var(--sub); margin-top: -4px; }
     .post { background: #0d1322; border: 1px solid var(--border); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
     .p-head { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--sub); }
-    .p-body { background: #05070c; border-radius: 6px; height: 110px; width: 100%; position: relative; overflow: hidden; border: 1px solid rgba(59,130,246,0.2); cursor: pointer; }
-    .p-body::after { content: '🔍 拡大'; position: absolute; bottom: 3px; right: 5px; background: rgba(0,0,0,0.6); color: #60a5fa; font-size: 0.6rem; padding: 1px 4px; border-radius: 3px; z-index: 3; }
+    .p-body { background: #05070c; border-radius: 6px; height: 110px; width: 100%; position: relative; overflow: hidden; border: 1px solid rgba(16,185,129,0.3); cursor: pointer; }
+    .p-body::after { content: '🔍 拡大'; position: absolute; bottom: 3px; right: 5px; background: rgba(0,0,0,0.6); color: #34d399; font-size: 0.6rem; padding: 1px 4px; border-radius: 3px; z-index: 3; }
+    .r-bar { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
+    .r-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; padding: 2px 6px; font-size: 0.7rem; color: var(--text); cursor: pointer; display: flex; gap: 3px; }
+    .toggle-rep { background: none; border: none; color: var(--reply); font-size: 0.7rem; font-weight: bold; cursor: pointer; text-align: left; margin-top: 2px; }
+    .reps { display: none; margin-top: 4px; padding-left: 8px; border-left: 2px solid var(--reply); display: flex; flex-direction: column; gap: 4px; }
+    .reps.open { display: flex; }
+    .rep-item { background: #151c2c; padding: 5px 7px; border-radius: 6px; font-size: 0.75rem; border: 1px solid rgba(59,130,246,0.3); color: var(--reply); }
     .del { background: none; border: none; color: var(--red); font-size: 0.65rem; font-weight: bold; cursor: pointer; }
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; justify-content: center; align-items: center; padding: 10px; }
     .m-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 480px; max-height: 90vh; display: flex; flex-direction: column; padding: 14px; gap: 10px; }
@@ -42,7 +54,7 @@
     .c-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font-size: 0.7rem; flex: 1; }
     .c-head { font-weight: bold; color: var(--sub); }
     .c-cell { background: #0b0f19; border-radius: 4px; display: flex; flex-direction: column; align-items: center; padding: 2px; font-weight: bold; color: #d1d5db; cursor: pointer; min-height: 24px; }
-    .c-cell.today { background: rgba(59,130,246,0.2); color: var(--primary); border: 1px solid var(--primary); }
+    .c-cell.today { background: rgba(16,185,129,0.2); color: var(--primary); border: 1px solid var(--primary); }
     .dot { width: 3px; height: 3px; background: var(--primary); border-radius: 50%; margin-top: 1px; }
   </style>
 </head>
@@ -56,6 +68,9 @@
         <button class="ibtn" onclick="openModal('archModal')">📜 ログ</button>
       </div>
     </header>
+
+    <!-- 本日の日付・時間表示 -->
+    <div class="date-banner" id="todayDateBanner">📅 読み込み中...</div>
 
     <div class="main">
       <section class="card">
@@ -89,7 +104,7 @@
     <div class="card full-modal" onclick="event.stopPropagation()">
       <div class="m-head"><span id="vTitle">拡大表示</span><button class="ibtn" onclick="closeModal('viewModal')">✕</button></div>
       <div class="c-wrap" id="vWrap" style="flex:1; height:auto;"><img id="vBg" class="bg-img" style="display:none;"><canvas id="vCvs"></canvas></div>
-      <div class="tools"><button class="btn" id="vRep">▶ 再生</button><button class="btn" onclick="closeModal('viewModal')">閉じる</button></div>
+      <div class="tools"><button class="btn" id="vRep" style="background:var(--primary); color:white;">▶ 再生</button><button class="btn" onclick="closeModal('viewModal')">閉じる</button></div>
     </div>
   </div>
 
@@ -102,6 +117,26 @@
         <button class="btn" id="fEraseBtn" onclick="toggleFErase()">消しゴム</button>
         <button class="btn" onclick="clearFull()">クリア</button>
         <button class="sbtn" onclick="closeFull()">完了して反映</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 返信モーダル -->
+  <div class="modal" id="repModal">
+    <div class="m-card" style="max-width:380px;">
+      <div class="m-head"><span style="color:var(--reply);">💬 返信コメント作成</span><button class="ibtn" onclick="closeModal('repModal')">✕</button></div>
+      <div class="m-body">
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="repInp" class="d-inp" placeholder="テキストで返信">
+          <button class="btn" style="background:var(--reply); color:white; border:none;" onclick="subTextRep()">送信</button>
+        </div>
+        <div style="font-size:0.75rem; color:var(--reply); font-weight:bold; margin-top:4px;">または手書きで返信 (ブルー):</div>
+        <div class="c-wrap" style="height:110px; border-color:var(--reply);" id="rWrap"><canvas id="rCvs"></canvas></div>
+        <div class="tools">
+          <button class="btn" onclick="rCtx.clearRect(0,0,rCvs.width,rCvs.height); rHist=[];">クリア</button>
+          <button class="btn" style="background:var(--reply); color:white;" onclick="playAnim('rCvs', rHist, '#3b82f6')">▶ プレビュー</button>
+          <button class="sbtn" style="background:var(--reply);" onclick="subDrawRep()">手書き送信</button>
+        </div>
       </div>
     </div>
   </div>
@@ -138,15 +173,24 @@
     const GAS = "https://script.google.com/macros/s/AKfycbzzX3-your-gas-url/exec";
     let posts = JSON.parse(localStorage.getItem('V_POSTS')) || [];
     let events = JSON.parse(localStorage.getItem('V_EVTS')) || [];
-    let imgData = null, startT = 0, isErase = false;
-    let mCvs, mCtx, fCvs, fCtx, vCvs, vCtx, history = [], fHistory = [];
+    let imgData = null, startT = 0, isErase = false, activeRepId = null;
+    let mCvs, mCtx, fCvs, fCtx, vCvs, vCtx, rCvs, rCtx, history = [], fHistory = [], rHist = [];
 
     window.onload = () => {
-      updAuthor(); initCvs(); renderTL(); renderCal();
+      showTodayBanner();
+      updAuthor(); initCvs(); loadDraft(); renderTL(); renderCal();
       setInterval(() => fetch(GAS,{method:'POST',body:JSON.stringify({posts,events})}).then(r=>r.json()).then(res=>{
         if(res.posts && res.posts.length !== posts.length){ posts = res.posts; saveP(); renderTL(); document.getElementById('gBadge').style.display='inline-block'; }
       }).catch(()=>{}), 10000);
     };
+
+    function showTodayBanner() {
+      const now = new Date();
+      const days = ['日', '月', '火', '水', '木', '金', '土'];
+      const dateStr = `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} (${days[now.getDay()]})`;
+      const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+      document.getElementById('todayDateBanner').innerHTML = `<span>📅 ${dateStr}</span><span>🕒 ${timeStr}</span>`;
+    }
 
     function getDevId() {
       let id = localStorage.getItem('V_DID');
@@ -156,6 +200,22 @@
     function getCol(s) { let h=0; for(let i=0;i<s.length;i++) h=s.charCodeAt(i)+((h<<5)-h); return `hsl(${Math.abs(h)%360},85%,65%)`; }
     function uName() { return localStorage.getItem('V_NAME') || '名無し'; }
     function updAuthor() { document.getElementById('authorDisp').innerHTML = `<span style="color:${getCol(getDevId())};">${uName()}</span>`; }
+
+    function saveDraft() {
+      localStorage.setItem('V_DRAFT', JSON.stringify({ history, imgData }));
+    }
+
+    function loadDraft() {
+      try {
+        let d = JSON.parse(localStorage.getItem('V_DRAFT'));
+        if(d) {
+          if(d.history && d.history.length > 0) { history = d.history; playAnim('mCvs', history, '#10b981'); }
+          if(d.imgData) { imgData = d.imgData; ['mBg','fBg'].forEach(id => { let el=document.getElementById(id); if(el){el.src=imgData; el.style.display='block';} }); }
+        }
+      } catch(e){}
+    }
+
+    function clearDraft() { localStorage.removeItem('V_DRAFT'); }
 
     function imgSelect(e) {
       const f = e.target.files[0]; if(!f) return;
@@ -168,6 +228,7 @@
           c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h);
           imgData = c.toDataURL('image/jpeg',0.8);
           ['mBg','fBg'].forEach(id => { let el=document.getElementById(id); if(el){el.src=imgData; el.style.display='block';} });
+          saveDraft();
         }; img.src = ev.target.result;
       }; r.readAsDataURL(f);
     }
@@ -182,8 +243,7 @@
         cvs.onmousedown = cvs.ontouchstart = e => {
           drawing = true; if(histGetter().length===0) startT=Date.now();
           const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); 
-          ctx.lineWidth = isErase ? 12 : 3.5; 
-          ctx.strokeStyle = isErase ? '#05070c' : '#3b82f6';
+          ctx.lineWidth = isErase ? 12 : 3.5; ctx.strokeStyle = isErase ? '#05070c' : '#10b981';
           stroke = [{type:'start', x:p.x, y:p.y, t:Date.now()-startT, erase:isErase, w: isErase ? 12 : 3.5}];
         };
         cvs.onmousemove = cvs.ontouchmove = e => {
@@ -191,7 +251,7 @@
           stroke.push({type:'move', x:p.x, y:p.y, t:Date.now()-startT});
         };
         cvs.onmouseup = cvs.ontouchend = () => {
-          if(drawing){ drawing=false; if(stroke.length>0) histGetter().push(stroke); }
+          if(drawing){ drawing=false; if(stroke.length>0){ histGetter().push(stroke); saveDraft(); } }
         };
       };
       setupDraw(mCvs, mCtx, ()=>history);
@@ -205,7 +265,7 @@
     }
     function toggleFErase() { toggleErase(); }
 
-    function clearCvs() { mCtx.clearRect(0,0,mCvs.width,mCvs.height); history=[]; imgData=null; ['mBg','fBg'].forEach(id=>{let el=document.getElementById(id);if(el){el.src='';el.style.display='none';}}); }
+    function clearCvs() { mCtx.clearRect(0,0,mCvs.width,mCvs.height); history=[]; imgData=null; clearDraft(); ['mBg','fBg'].forEach(id=>{let el=document.getElementById(id);if(el){el.src='';el.style.display='none';}}); }
 
     function openFull() {
       fHistory = [...history]; document.getElementById('fullModal').style.display = 'flex';
@@ -213,24 +273,24 @@
         fCvs = document.getElementById('fCvs'); const wrap = document.getElementById('fWrap');
         fCvs.width = wrap.clientWidth; fCvs.height = wrap.clientHeight; fCtx = fCvs.getContext('2d'); fCtx.lineCap='round';
         if(imgData){ let el=document.getElementById('fBg'); el.src=imgData; el.style.display='block'; }
-        if(fHistory.length>0) playAnim('fCvs', fHistory);
+        if(fHistory.length>0) playAnim('fCvs', fHistory, '#10b981');
         
         let drawing=false, stroke=[];
         const pos = e => { const r = fCvs.getBoundingClientRect(); const cl = e.touches?e.touches[0].clientX:e.clientX, ct = e.touches?e.touches[0].clientY:e.clientY; return {x:cl-r.left, y:ct-r.top}; };
         fCvs.onmousedown = fCvs.ontouchstart = e => { 
           drawing=true; const p=pos(e); fCtx.beginPath(); fCtx.moveTo(p.x,p.y); 
-          fCtx.lineWidth = isErase ? 12 : 3.5; 
-          fCtx.strokeStyle = isErase ? '#05070c' : '#3b82f6'; 
+          fCtx.lineWidth = isErase ? 12 : 3.5; fCtx.strokeStyle = isErase ? '#05070c' : '#10b981'; 
           stroke=[{type:'start',x:p.x,y:p.y,t:Date.now()-startT,erase:isErase,w: isErase ? 12 : 3.5}]; 
         };
         fCvs.onmousemove = fCvs.ontouchmove = e => { if(!drawing)return; e.preventDefault(); const p=pos(e); fCtx.lineTo(p.x,p.y); fCtx.stroke(); stroke.push({type:'move',x:p.x,y:p.y,t:Date.now()-startT}); };
-        fCvs.onmouseup = fCvs.ontouchend = () => { if(drawing){ drawing=false; if(stroke.length>0) fHistory.push(stroke); } };
+        fCvs.onmouseup = fCvs.ontouchend = () => { if(drawing){ drawing=false; if(stroke.length>0){ fHistory.push(stroke); saveDraft(); } } };
       }, 100);
     }
     function clearFull() { fCtx.clearRect(0,0,fCvs.width,fCvs.height); fHistory=[]; }
     function closeFull() {
       history = [...fHistory]; document.getElementById('fullModal').style.display='none';
-      mCtx.clearRect(0,0,mCvs.width,mCvs.height); if(history.length>0) playAnim('mCvs', history);
+      mCtx.clearRect(0,0,mCvs.width,mCvs.height); if(history.length>0) playAnim('mCvs', history, '#10b981');
+      saveDraft();
     }
 
     function submitPost() {
@@ -239,12 +299,12 @@
       posts.unshift({
         id: 'P_'+Date.now(), ts: now.getTime(), author: uName(), uid: getDevId(),
         time: `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
-        strokes: history, image: imgData
+        strokes: history, image: imgData, reactions: {'👍':0,'👌':0,'🙏':0}, replies: []
       });
       saveP(); clearCvs(); renderTL();
     }
 
-    function playAnim(cvsId, hist, col='#3b82f6') {
+    function playAnim(cvsId, hist, col='#10b981') {
       const cvs = document.getElementById(cvsId); if(!cvs) return; const c = cvs.getContext('2d');
       c.clearRect(0,0,cvs.width,cvs.height); c.lineCap='round';
       let pts = []; hist.forEach(s => pts=pts.concat(s)); if(pts.length===0) return;
@@ -273,8 +333,22 @@
       const c = document.getElementById('timeline'); const r = posts.slice(0,7);
       if(r.length===0){ c.innerHTML='<p style="color:var(--sub); font-size:0.75rem;">投稿はありません</p>'; return; }
       c.innerHTML = r.map(p => {
-        const cid = 'cvs_'+p.id; setTimeout(()=>playAnim(cid, p.strokes), 50);
+        const cid = 'cvs_'+p.id; setTimeout(()=>playAnim(cid, p.strokes, '#10b981'), 50);
         const my = p.uid === getDevId();
+        const reps = p.replies || [];
+        const repsHtml = reps.map(rep => {
+          const rMy = rep.uid === getDevId();
+          const rCid = 'rcvs_'+rep.id;
+          if(rep.strokes) setTimeout(()=>playAnim(rCid, rep.strokes, '#3b82f6'), 50);
+          return `<div class="rep-item">
+            <div style="display:flex; justify-content:space-between; font-size:0.65rem; opacity:0.8;">
+              <span><strong style="color:${getCol(rep.uid)};">${rep.author}</strong> (${rep.time})</span>
+              ${rMy?`<button class="del" onclick="delRep('${p.id}','${rep.id}')">削除</button>`:''}
+            </div>
+            ${rep.strokes ? `<div style="height:60px;position:relative;background:#05070c;border-radius:4px;margin-top:2px;"><canvas id="${rCid}"></canvas></div>` : `<div style="color:#60a5fa;margin-top:2px;">${rep.text}</div>`}
+          </div>`;
+        }).join('');
+
         return `<div class="post">
           <div class="p-head">
             <span style="font-weight:bold; color:${getCol(p.uid)};">${p.author}</span>
@@ -283,8 +357,76 @@
           <div class="p-body" onclick="openView('${p.id}')">
             ${p.image?`<img src="${p.image}" class="bg-img">`:''}<canvas id="${cid}"></canvas>
           </div>
+          <div class="r-bar">
+            <button class="r-btn" onclick="addReact('${p.id}','👍')">👍 ${p.reactions?.['👍']||0}</button>
+            <button class="r-btn" onclick="addReact('${p.id}','👌')">👌 ${p.reactions?.['👌']||0}</button>
+            <button class="r-btn" onclick="addReact('${p.id}','🙏')">🙏 ${p.reactions?.['🙏']||0}</button>
+            <button class="r-btn" onclick="openRep('${p.id}')" style="color:var(--reply); border-color:var(--reply); margin-left:auto;">💬 返信</button>
+          </div>
+          ${reps.length > 0 ? `
+            <button class="toggle-rep" onclick="toggleRep('${p.id}')">💬 コメント (${reps.length}件)</button>
+            <div class="reps" id="reps_${p.id}">${repsHtml}</div>
+          ` : ''}
         </div>`;
       }).join('');
+    }
+
+    function addReact(id, emoji) {
+      const p = posts.find(x => x.id===id);
+      if(p) {
+        if(!p.reactions) p.reactions = {'👍':0,'👌':0,'🙏':0};
+        p.reactions[emoji] = (p.reactions[emoji]||0) + 1;
+        saveP(); renderTL();
+      }
+    }
+
+    function toggleRep(id) {
+      const el = document.getElementById('reps_'+id);
+      if(el) el.classList.toggle('open');
+    }
+
+    function openRep(id) {
+      activeRepId = id; document.getElementById('repInp').value='';
+      document.getElementById('repModal').style.display='flex';
+      setTimeout(()=>{
+        rCvs = document.getElementById('rCvs'); const w = document.getElementById('rWrap');
+        rCvs.width = w.clientWidth; rCvs.height = w.clientHeight; rCtx = rCvs.getContext('2d'); rCtx.lineCap='round';
+        rHist = [];
+        let drawing=false, stroke=[];
+        const pos = e => { const r = rCvs.getBoundingClientRect(); const cl = e.touches?e.touches[0].clientX:e.clientX, ct = e.touches?e.touches[0].clientY:e.clientY; return {x:cl-r.left, y:ct-r.top}; };
+        rCvs.onmousedown = rCvs.ontouchstart = e => { drawing=true; const p=pos(e); rCtx.beginPath(); rCtx.moveTo(p.x,p.y); rCtx.lineWidth=3.5; rCtx.strokeStyle='#3b82f6'; stroke=[{type:'start',x:p.x,y:p.y,t:Date.now()-startT,w:3.5}]; };
+        rCvs.onmousemove = rCvs.ontouchmove = e => { if(!drawing)return; e.preventDefault(); const p=pos(e); rCtx.lineTo(p.x,p.y); rCtx.stroke(); stroke.push({type:'move',x:p.x,y:p.y,t:Date.now()-startT}); };
+        rCvs.onmouseup = rCvs.ontouchend = () => { if(drawing){ drawing=false; if(stroke.length>0) rHist.push(stroke); } };
+      },50);
+    }
+
+    function subTextRep() {
+      const txt = document.getElementById('repInp').value.trim(); if(!txt) return;
+      const p = posts.find(x => x.id===activeRepId);
+      if(p) {
+        if(!p.replies) p.replies=[];
+        const now = new Date();
+        p.replies.push({ id:'R_'+Date.now(), author:uName(), uid:getDevId(), time:`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`, text:txt });
+        saveP(); closeModal('repModal'); renderTL();
+      }
+    }
+
+    function subDrawRep() {
+      if(rHist.length===0){ alert('手書きしてください'); return; }
+      const p = posts.find(x => x.id===activeRepId);
+      if(p) {
+        if(!p.replies) p.replies=[];
+        const now = new Date();
+        p.replies.push({ id:'R_'+Date.now(), author:uName(), uid:getDevId(), time:`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`, strokes:rHist });
+        saveP(); closeModal('repModal'); renderTL();
+      }
+    }
+
+    function delRep(pid, rid) {
+      if(confirm('コメントを削除しますか？')){
+        const p = posts.find(x => x.id===pid);
+        if(p && p.replies){ p.replies = p.replies.filter(r => r.id!==rid); saveP(); renderTL(); }
+      }
     }
 
     function openView(id) {
@@ -295,8 +437,8 @@
         vCvs = document.getElementById('vCvs'); const w = document.getElementById('vWrap');
         vCvs.width=w.clientWidth; vCvs.height=w.clientHeight;
         let bg=document.getElementById('vBg'); if(p.image){bg.src=p.image;bg.style.display='block';}else{bg.style.display='none';}
-        playAnim('vCvs', p.strokes);
-        document.getElementById('vRep').onclick = () => playAnim('vCvs', p.strokes);
+        playAnim('vCvs', p.strokes, '#10b981');
+        document.getElementById('vRep').onclick = () => playAnim('vCvs', p.strokes, '#10b981');
       },50);
     }
 
@@ -334,4 +476,3 @@
   </script>
 </body>
 </html>
-
