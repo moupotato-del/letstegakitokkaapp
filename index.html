@@ -31,6 +31,11 @@
     .tools { display: flex; gap: 5px; justify-content: space-between; align-items: center; }
     .btn { background: #222d45; color: var(--text); border: 1px solid var(--border); padding: 7px 10px; border-radius: 6px; font-weight: bold; font-size: 0.75rem; cursor: pointer; }
     .btn.active { background: var(--primary); border-color: var(--primary); }
+    
+    /* 点滅アニメーション */
+    @keyframes blinkBtn { 0%, 100% { opacity: 1; background: var(--red); } 50% { opacity: 0.3; background: #991b1b; } }
+    .blinking { animation: blinkBtn 0.6s infinite ease-in-out; }
+
     .sbtn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 900; font-size: 0.85rem; cursor: pointer; margin-left: auto; }
     .note { font-size: 0.65rem; color: var(--sub); margin-top: -4px; }
     .post { background: #0d1322; border: 1px solid var(--border); border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
@@ -69,7 +74,6 @@
       </div>
     </header>
 
-    <!-- 本日の日付・時間表示 -->
     <div class="date-banner" id="todayDateBanner">📅 読み込み中...</div>
 
     <div class="main">
@@ -141,6 +145,16 @@
     </div>
   </div>
 
+  <!-- ポップアップモーダル -->
+  <div class="modal" id="popupModal">
+    <div class="m-card" style="max-width:300px; text-align:center; padding:20px;">
+      <div style="font-size:1.5rem; margin-bottom:5px;">🧹</div>
+      <div style="font-weight:bold; font-size:1rem; margin-bottom:10px;">消しゴム4回タッチ！</div>
+      <div style="font-size:0.8rem; color:var(--sub); margin-bottom:15px;">消しゴムボタンが3秒間点滅します。</div>
+      <button class="btn" style="background:var(--primary); color:white; width:100%;" onclick="closeModal('popupModal')">閉じる</button>
+    </div>
+  </div>
+
   <!-- 名前変更 -->
   <div class="modal" id="nameModal">
     <div class="m-card" style="max-width:320px;">
@@ -174,6 +188,7 @@
     let posts = JSON.parse(localStorage.getItem('V_POSTS')) || [];
     let events = JSON.parse(localStorage.getItem('V_EVTS')) || [];
     let imgData = null, startT = 0, isErase = false, activeRepId = null;
+    let eraseClickCount = 0, blinkTimer = null;
     let mCvs, mCtx, fCvs, fCtx, vCvs, vCtx, rCvs, rCtx, history = [], fHistory = [], rHist = [];
 
     window.onload = () => {
@@ -259,11 +274,50 @@
 
     function toggleErase() {
       isErase = !isErase;
-      document.getElementById('eraseBtn').classList.toggle('active', isErase);
+      
+      // 消しゴムをオフにした場合は点滅を即座に消す
+      if (!isErase) {
+        stopBlinking();
+        eraseClickCount = 0;
+      } else {
+        eraseClickCount++;
+        if (eraseClickCount === 4) {
+          eraseClickCount = 0;
+          triggerEraseBlinkAndPopup();
+        }
+      }
+
+      const eBtn = document.getElementById('eraseBtn');
       const fBtn = document.getElementById('fEraseBtn');
+      eBtn.classList.toggle('active', isErase);
       if(fBtn) fBtn.classList.toggle('active', isErase);
     }
     function toggleFErase() { toggleErase(); }
+
+    function triggerEraseBlinkAndPopup() {
+      // ポップアップ表示
+      document.getElementById('popupModal').style.display = 'flex';
+      
+      // 3秒間ボタンを点滅させる
+      const eBtn = document.getElementById('eraseBtn');
+      const fBtn = document.getElementById('fEraseBtn');
+      
+      eBtn.classList.add('blinking');
+      if(fBtn) fBtn.classList.add('blinking');
+
+      if(blinkTimer) clearTimeout(blinkTimer);
+      blinkTimer = setTimeout(() => {
+        stopBlinking();
+      }, 3000);
+    }
+
+    function stopBlinking() {
+      const eBtn = document.getElementById('eraseBtn');
+      const fBtn = document.getElementById('fEraseBtn');
+      eBtn.classList.remove('blinking');
+      if(fBtn) fBtn.classList.remove('blinking');
+      if(blinkTimer) clearTimeout(blinkTimer);
+    }
 
     function clearCvs() { mCtx.clearRect(0,0,mCvs.width,mCvs.height); history=[]; imgData=null; clearDraft(); ['mBg','fBg'].forEach(id=>{let el=document.getElementById(id);if(el){el.src='';el.style.display='none';}}); }
 
@@ -476,3 +530,4 @@
   </script>
 </body>
 </html>
+
