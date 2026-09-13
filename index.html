@@ -100,6 +100,10 @@
     }
     .btn-submit-lg:active { transform: scale(0.97); }
 
+    .image-note {
+      font-size: 0.7rem; color: var(--sub-text); margin-top: -4px; margin-bottom: 2px;
+    }
+
     /* BBS Cards */
     .post-card {
       background: #0d1322; border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 8px;
@@ -197,6 +201,7 @@
           <img id="mainBgImage" class="bg-image-preview" style="display:none;">
           <canvas id="mainCanvas"></canvas>
         </div>
+        <div class="image-note">ℹ️ ※選択した画像は投稿しやすいサイズに自動で最適化（リサイズ）されます。</div>
         <div class="canvas-tools">
           <label class="btn-action" style="cursor:pointer; display:flex; align-items:center; gap:4px;">
             📷 画像を選択
@@ -416,7 +421,7 @@
       closeModal('nameModal');
     }
 
-    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V14')) || [];
+    let posts = JSON.parse(localStorage.getItem('VIL_CANVAS_POSTS_V15')) || [];
     let events = JSON.parse(localStorage.getItem('VIL_CANVAS_EVENTS')) || [];
     let activeReplyPostId = null;
     let activeAnimTimers = {};
@@ -434,26 +439,53 @@
       setInterval(autoSyncData, 5000);
     };
 
-    /* --- 画像選択・FileReader処理の堅牢化 --- */
+    /* --- 自動リサイズ付き画像選択処理 --- */
     function handleImageSelect(e) {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(evt) {
-        attachedImageData = evt.target.result;
-        
-        const bgImg = document.getElementById('mainBgImage');
-        if (bgImg) {
-          bgImg.src = attachedImageData;
-          bgImg.style.display = 'block';
-        }
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const MAX_SIZE = 1024;
 
-        const fsBg = document.getElementById('fsBgImage');
-        if (fsBg) {
-          fsBg.src = attachedImageData;
-          fsBg.style.display = 'block';
-        }
+          if (width > height) {
+            if (width > MAX_SIZE) {
+              height *= MAX_SIZE / width;
+              width = MAX_SIZE;
+            }
+          } else {
+            if (height > MAX_SIZE) {
+              width *= MAX_SIZE / height;
+              height = MAX_SIZE;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // 圧縮されたBase64データを生成（JPEG品質 0.8）
+          attachedImageData = canvas.toDataURL('image/jpeg', 0.8);
+
+          const bgImg = document.getElementById('mainBgImage');
+          if (bgImg) {
+            bgImg.src = attachedImageData;
+            bgImg.style.display = 'block';
+          }
+
+          const fsBg = document.getElementById('fsBgImage');
+          if (fsBg) {
+            fsBg.src = attachedImageData;
+            fsBg.style.display = 'block';
+          }
+        };
+        img.src = evt.target.result;
       };
       reader.onerror = function() {
         alert('画像の読み込みに失敗しました。');
@@ -1025,7 +1057,7 @@
     }
 
     function saveLocalPosts() {
-      localStorage.setItem('VIL_CANVAS_POSTS_V14', JSON.stringify(posts));
+      localStorage.setItem('VIL_CANVAS_POSTS_V15', JSON.stringify(posts));
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
@@ -1047,4 +1079,3 @@
   </script>
 </body>
 </html>
-
