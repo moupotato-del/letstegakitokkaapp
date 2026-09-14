@@ -154,7 +154,7 @@
   <div class="modal" id="nameModal">
     <div class="m-card" style="max-width:320px;">
       <div class="m-head"><span>名前変更</span><button class="ibtn" onclick="closeModal('nameModal')">✕</button></div>
-      <input type="text" id="nameInput" class="d-inp" placeholder="名前">
+      <input type="text" id="nameInput" class="d-inp" placeholder="名前を入力">
       <button class="btn" style="background:var(--primary); color:white;" onclick="saveUserName()">保存</button>
     </div>
   </div>
@@ -178,7 +178,7 @@
     let eraserClickCount = 0, eraserBlinkTimer = null;
     let mainCvs, mainCtx, fullCvs, fullCtx, viewCvs, viewCtx, replyCvs, replyCtx;
     let mainHistory = [], fullHistory = [], replyHistory = [];
-    let currentCalDate = new Date(); // カレンダー表示用
+    let currentCalDate = new Date();
 
     window.onload = () => {
       displayDateBanner();
@@ -216,7 +216,9 @@
       return `${baseName} (${getDeviceId()})`; 
     }
     
-    function updateAuthorDisplay() { document.getElementById('authorDisp').innerHTML = `<span style="color:${generateColorFromString(getDeviceId())};">${getUserName()}</span>`; }
+    function updateAuthorDisplay() { 
+      document.getElementById('authorDisp').innerHTML = `<span style="color:${generateColorFromString(getDeviceId())};">${getUserName()}</span>`; 
+    }
 
     function saveDraftData() { localStorage.setItem('V_DRAFT', JSON.stringify({ history: mainHistory, imgData: currentImgData })); }
     
@@ -654,7 +656,27 @@
 
     function saveUserName() {
       let name = document.getElementById('nameInput').value.trim();
-      if (name) { localStorage.setItem('V_NAME', name); updateAuthorDisplay(); closeModal('nameModal'); }
+      if (name) {
+        let oldName = getUserName();
+        localStorage.setItem('V_NAME', name);
+        let newName = getUserName();
+        
+        // 過去の自分の投稿や返信の名前をすべて新しい名前に一括更新
+        const myId = getDeviceId();
+        posts.forEach(p => {
+          if (p.uid === myId) p.author = newName;
+          if (p.replies) {
+            p.replies.forEach(r => {
+              if (r.uid === myId) r.author = newName;
+            });
+          }
+        });
+        
+        persistDataAndSync();
+        updateAuthorDisplay();
+        renderTimeline();
+        closeModal('nameModal');
+      }
     }
 
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
