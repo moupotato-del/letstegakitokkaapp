@@ -26,7 +26,6 @@
     
     .card { background: var(--card); border: 3px solid var(--card-border); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.5); }
     
-    /* 新規投稿エリアのデザイン */
     .new-post-card {
       background: linear-gradient(145deg, #111c2e, #0d1522);
       border: 3px solid var(--primary);
@@ -285,8 +284,7 @@
         const img = new Image();
         img.onload = () => {
           const canvas = document.createElement('canvas'); let w = img.width, h = img.height;
-          // 画像サイズを適切に制限して容量オーバーを防ぐ（最大幅・高さ 800px）
-          const MAX_SIZE = 800;
+          const MAX_SIZE = 600; // 容量オーバーを確実に出さないよう、600pxに最適化
           if (w > MAX_SIZE || h > MAX_SIZE) {
             if (w > h) { h = Math.round(h * (MAX_SIZE / w)); w = MAX_SIZE; }
             else { w = Math.round(w * (MAX_SIZE / h)); h = MAX_SIZE; }
@@ -296,8 +294,15 @@
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, w, h);
-          currentImgData = canvas.toDataURL('image/jpeg', 0.75);
-          ['mBg', 'fullBgImg'].forEach(id => { let el = document.getElementById(id); if (el) { el.src = currentImgData; el.style.display = 'block'; } });
+          currentImgData = canvas.toDataURL('image/jpeg', 0.65);
+          
+          ['mBg', 'fullBgImg'].forEach(id => {
+            let el = document.getElementById(id);
+            if (el) {
+              el.src = currentImgData;
+              el.style.display = 'block';
+            }
+          });
           saveDraftData();
         };
         img.src = ev.target.result;
@@ -422,11 +427,13 @@
             localStorage.setItem('V_POSTS', serializedPosts);
             break;
           } catch (e) {
-            let oldestImagePost = posts.find(p => p.image);
+            let oldestImagePost = posts.slice().reverse().find(p => p.image);
             if (oldestImagePost) {
               oldestImagePost.image = null;
               serializedPosts = JSON.stringify(posts);
             } else {
+              posts = posts.slice(0, 3);
+              serializedPosts = JSON.stringify(posts);
               break;
             }
           }
@@ -560,7 +567,7 @@
             </div>
           </div>
           <div class="p-body" onclick="openViewModal('${post.id}')">
-            ${post.image ? `<img src="${post.image}" class="bg-img" style="display:block;">` : ''}<canvas id="${cvsId}"></canvas>
+            ${post.image ? `<img src="${post.image}" class="bg-img" style="display:block !important;">` : ''}<canvas id="${cvsId}"></canvas>
           </div>
           <div class="r-bar">
             ${makeReactBtn('👍')}
