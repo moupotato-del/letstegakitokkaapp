@@ -63,6 +63,12 @@
     .m-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
     .d-inp { background: #020408; border: 2px solid var(--border); color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; width: 100%; }
     
+    /* スクショ専用クリーン表示モード用 */
+    #cleanScreenModal { display: none; position: fixed; inset: 0; background: #000000; z-index: 20000; justify-content: center; align-items: center; padding: 0; }
+    #cleanScreenModal .clean-wrap { position: relative; width: 100vw; height: 100dvh; display: flex; justify-content: center; align-items: center; background: #000; }
+    #cleanScreenModal img { width: 100% !important; height: 100% !important; object-fit: contain; position: absolute; inset: 0; z-index: 1; }
+    .close-clean-btn { position: fixed; top: 15px; right: 15px; background: rgba(0,0,0,0.7); color: white; border: 2px solid #fff; border-radius: 50%; width: 40px; height: 40px; font-weight: bold; font-size: 1rem; cursor: pointer; z-index: 20001; display: flex; justify-content: center; align-items: center; }
+
     .cal-sec { height: 230px; flex-shrink: 0; }
     .c-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 0.75rem; flex: 1; }
     .c-head { font-weight: bold; color: var(--sub); }
@@ -124,9 +130,17 @@
       <div class="c-wrap" id="viewWrap" style="flex:1; height:auto;"><img id="viewBgImg" class="bg-img" style="display:none;"><canvas id="viewCvs"></canvas></div>
       <div class="tools" style="flex-wrap:wrap; gap:8px;">
         <button class="btn" id="viewReplayBtn" style="background:var(--primary); color:#000;">▶ アニメ再生</button>
-        <button class="btn" id="saveImageBtn" style="background:var(--reply); color:white; display:none;" onclick="downloadAttachedImage()">📥 画像のみ保存</button>
+        <button class="btn" id="cleanScreenBtn" style="background:var(--reply); color:white; display:none;" onclick="openCleanScreenForScreenshot()">🖼️ 写真のみ表示（スクショ用）</button>
         <button class="btn" onclick="closeModal('viewModal')" style="margin-left:auto;">閉じる</button>
       </div>
+    </div>
+  </div>
+
+  <!-- スクリーンショット専用クリーン表示モード（写真のみ） -->
+  <div id="cleanScreenModal">
+    <button class="close-clean-btn" onclick="closeCleanScreen()">✕</button>
+    <div class="clean-wrap" id="cleanWrap">
+      <img id="cleanBgImg" class="bg-img" style="display:none;">
     </div>
   </div>
 
@@ -190,9 +204,8 @@
     let currentImgData = null, strokeStartTime = 0, isEraserActive = false, activeReplyPostId = null;
     let eraserClickCount = 0, eraserBlinkTimer = null;
     let mainCvs, mainCtx, fullCvs, fullCtx, viewCvs, viewCtx, replyCvs, replyCtx;
-    let mainHistory = [], fullHistory = [], replyHistory = [];
+    let mainHistory = [], fullHistory = [], replyHistory = [], currentCleanPost = null;
     let currentCalDate = new Date();
-    let currentViewImgData = null;
 
     window.onload = () => {
       displayDateBanner();
@@ -607,15 +620,15 @@
 
     function openViewModal(id) {
       const post = posts.find(x => x.id === id); if (!post) return;
+      currentCleanPost = post;
       document.getElementById('viewModalTitle').innerText = `${post.author} さんの投稿`;
       document.getElementById('viewModal').style.display = 'flex';
-      
-      currentViewImgData = post.image || null;
-      let saveBtn = document.getElementById('saveImageBtn');
-      if (currentViewImgData) {
-        saveBtn.style.display = 'inline-block';
+
+      let cleanBtn = document.getElementById('cleanScreenBtn');
+      if (post.image) {
+        cleanBtn.style.display = 'inline-block';
       } else {
-        saveBtn.style.display = 'none';
+        cleanBtn.style.display = 'none';
       }
 
       setTimeout(() => {
@@ -628,32 +641,18 @@
       }, 50);
     }
 
-    function downloadAttachedImage() {
-      if (!currentViewImgData) return;
-      
-      // DataURLをBlobに変換してファイルとして強制ダウンロードさせる
-      fetch(currentViewImgData)
-        .then(res => res.blob())
-        .then(blob => {
-          const blobUrl = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = blobUrl;
-          a.download = 'vil_canvas_' + Date.now() + '.jpg';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
-        })
-        .catch(() => {
-          // フォールバック
-          const a = document.createElement('a');
-          a.href = currentViewImgData;
-          a.download = 'vil_canvas_' + Date.now() + '.jpg';
-          a.target = '_blank';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        });
+    function openCleanScreenForScreenshot() {
+      if (!currentCleanPost || !currentCleanPost.image) return;
+      closeModal('viewModal');
+      document.getElementById('cleanScreenModal').style.display = 'flex';
+
+      let bgImg = document.getElementById('cleanBgImg');
+      bgImg.src = currentCleanPost.image;
+      bgImg.style.display = 'block';
+    }
+
+    function closeCleanScreen() {
+      document.getElementById('cleanScreenModal').style.display = 'none';
     }
 
     function deletePost(id) {
@@ -738,4 +737,3 @@
   </script>
 </body>
 </html>
-
