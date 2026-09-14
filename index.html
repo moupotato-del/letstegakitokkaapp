@@ -26,7 +26,7 @@
     
     .card { background: var(--card); border: 3px solid var(--card-border); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.5); }
     
-    /* 新規投稿エリア：さらに太い緑の枠と専用の緑系背景 */
+    /* 新規投稿エリア：太い緑の枠と緑系背景 */
     .new-post-card {
       background: linear-gradient(145deg, #06241b, #03110c);
       border: 4px solid var(--primary);
@@ -103,7 +103,7 @@
     <div class="date-banner" id="todayDateBanner">📅 読み込み中...</div>
 
     <div class="main">
-      <!-- 新規投稿セクション（太い緑の枠と緑系背景で強調） -->
+      <!-- 新規投稿セクション -->
       <section class="card new-post-card">
         <div class="c-title"><span>✍️ 新規メッセージ・写真作成</span><span id="authorDisp" style="font-size:0.75rem; color:var(--sub);"></span></div>
         <div class="c-wrap" id="mWrap"><img id="mBg" class="bg-img" style="display:none;"><canvas id="mCvs"></canvas></div>
@@ -173,9 +173,9 @@
 
   <!-- 全画面返信入力用 -->
   <div class="modal" id="fullReplyModal">
-    <div class="card full-modal">
+    <div class="card full-modal" style="background:var(--card); display:flex; flex-direction:column; padding:10px; gap:10px;">
       <div class="m-head"><span style="color:var(--reply);">⛶ 返信の全画面入力</span><button class="ibtn" onclick="closeFullReplyModal()">✓ 完了</button></div>
-      <div class="c-wrap" id="fullReplyWrap" style="flex:1; height:auto;"><canvas id="fullReplyCvs"></canvas></div>
+      <div class="c-wrap" id="fullReplyWrap" style="flex:1; height:auto; border-color:var(--reply);"><canvas id="fullReplyCvs"></canvas></div>
       <div class="tools">
         <button class="btn" onclick="fullReplyCtx.clearRect(0,0,fullReplyCvs.width,fullReplyCvs.height); replyHistory=[];">クリア</button>
         <button class="sbtn" style="background:var(--reply); color:white;" onclick="closeFullReplyModal()">完了して反映</button>
@@ -330,7 +330,7 @@
       mainCvs = document.getElementById('mCvs'); const wrap = document.getElementById('mWrap');
       mainCvs.width = wrap.clientWidth; mainCvs.height = wrap.clientHeight;
       mainCtx = mainCvs.getContext('2d'); mainCtx.lineCap = 'round';
-      setupCanvasDrawing(mainCvs, mainCtx, () => mainHistory);
+      setupCanvasDrawing(mainCvs, mainCtx, () => mainHistory, '#10b981');
     }
 
     function setupCanvasDrawing(cvs, ctx, getHistoryCallback, strokeColor = '#10b981') {
@@ -438,9 +438,13 @@
     function openFullReplyModal() {
       document.getElementById('fullReplyModal').style.display = 'flex';
       setTimeout(() => {
-        fullReplyCvs = document.getElementById('fullReplyCvs'); const wrap = document.getElementById('fullReplyWrap');
-        fullReplyCvs.width = wrap.clientWidth; fullReplyCvs.height = wrap.clientHeight;
-        fullReplyCtx = fullReplyCvs.getContext('2d'); fullReplyCtx.lineCap = 'round';
+        fullReplyCvs = document.getElementById('fullReplyCvs'); 
+        const wrap = document.getElementById('fullReplyWrap');
+        fullReplyCvs.width = wrap.clientWidth; 
+        fullReplyCvs.height = wrap.clientHeight;
+        fullReplyCtx = fullReplyCvs.getContext('2d'); 
+        fullReplyCtx.lineCap = 'round';
+        fullReplyCtx.clearRect(0, 0, fullReplyCvs.width, fullReplyCvs.height);
         if (replyHistory.length > 0) playAnimation('fullReplyCvs', replyHistory, '#3b82f6');
         setupCanvasDrawing(fullReplyCvs, fullReplyCtx, () => replyHistory, '#3b82f6');
       }, 100);
@@ -448,8 +452,10 @@
 
     function closeFullReplyModal() {
       document.getElementById('fullReplyModal').style.display = 'none';
-      replyCtx.clearRect(0, 0, replyCvs.width, replyCvs.height);
-      if (replyHistory.length > 0) playAnimation('replyCvs', replyHistory, '#3b82f6');
+      if (replyCtx && replyCvs) {
+        replyCtx.clearRect(0, 0, replyCvs.width, replyCvs.height);
+        if (replyHistory.length > 0) playAnimation('replyCvs', replyHistory, '#3b82f6');
+      }
     }
 
     function persistDataAndSync() {
