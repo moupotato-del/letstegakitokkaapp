@@ -118,7 +118,10 @@
       </section>
 
       <section class="card">
-        <div class="c-title"><span>💬 タイムライン</span></div>
+        <div class="c-title">
+          <span>💬 タイムライン</span>
+          <span id="syncStatus" style="font-size:0.7rem; color:var(--primary); font-weight:normal; display:none;">⏳ 投稿中...</span>
+        </div>
         <div id="timeline" style="display:flex; flex-direction:column; gap:12px;"></div>
       </section>
 
@@ -176,12 +179,12 @@
     <div class="card full-modal" style="background:var(--card); display:flex; flex-direction:column; padding:10px; gap:10px;">
       <div class="m-head">
         <span style="color:var(--reply);">⛶ 返信の全画面入力</span>
-        <button class="ibtn" onclick="closeFullReplyModal()">✕</button>
+        <button class="ibtn" onclick="closeFullReplyModalOnly()">✕ 戻る</button>
       </div>
       <div class="c-wrap" id="fullReplyWrap" style="flex:1; height:auto; border-color:var(--reply);"><canvas id="fullReplyCvs"></canvas></div>
       <div class="tools">
-        <button class="btn" onclick="fullReplyCtx.clearRect(0,0,fullReplyCvs.width,fullReplyCvs.height); replyHistory=[];">クリア</button>
-        <button class="sbtn" style="background:var(--reply); color:white;" onclick="submitFullReply()">✓ 完了して返信</button>
+        <button class="btn" onclick="if(fullReplyCtx && fullReplyCvs) { fullReplyCtx.clearRect(0,0,fullReplyCvs.width,fullReplyCvs.height); replyHistory=[]; }">クリア</button>
+        <button class="sbtn" style="background:var(--reply); color:white;" onclick="submitFullReplyAndFinish()">✓ 完了して返信する</button>
       </div>
     </div>
   </div>
@@ -368,7 +371,7 @@
           isDrawing = false;
           if (currentStroke.length > 0) {
             getHistoryCallback().push(currentStroke);
-            saveDraftData();
+            if (getHistoryCallback() === mainHistory) saveDraftData();
           }
         }
       };
@@ -453,7 +456,7 @@
       }, 100);
     }
 
-    function closeFullReplyModal() {
+    function closeFullReplyModalOnly() {
       document.getElementById('fullReplyModal').style.display = 'none';
       if (replyCtx && replyCvs) {
         replyCtx.clearRect(0, 0, replyCvs.width, replyCvs.height);
@@ -461,13 +464,24 @@
       }
     }
 
-    function submitFullReply() {
+    function submitFullReplyAndFinish() {
       if (replyHistory.length === 0) { alert('手書きしてください'); return; }
       document.getElementById('fullReplyModal').style.display = 'none';
       submitDrawReply();
     }
 
+    function showSyncStatus() {
+      const statusEl = document.getElementById('syncStatus');
+      if (statusEl) statusEl.style.display = 'inline';
+    }
+
+    function hideSyncStatus() {
+      const statusEl = document.getElementById('syncStatus');
+      if (statusEl) statusEl.style.display = 'none';
+    }
+
     function persistDataAndSync() {
+      showSyncStatus();
       try {
         let serializedPosts = JSON.stringify(posts);
         while (true) {
@@ -490,14 +504,18 @@
       localStorage.setItem('V_EVTS', JSON.stringify(events));
 
       if (GAS_ENDPOINT && GAS_ENDPOINT.startsWith('http')) {
-        fetch(GAS_ENDPOINT, { method: 'POST', body: JSON.stringify({ posts, events }) }).catch(() => {});
+        fetch(GAS_ENDPOINT, { method: 'POST', body: JSON.stringify({ posts, events }) })
+          .then(() => { setTimeout(hideSyncStatus, 1500); })
+          .catch(() => { hideSyncStatus(); });
+      } else {
+        setTimeout(hideSyncStatus, 1000);
       }
     }
 
     function syncDataWithCloud() {
       fetch(GAS_ENDPOINT).then(res => res.json()).then(data => {
         let needsUpdate = false;
-        if (data.posts && Array.isArray(data.posts)) {
+        if (data.posts && Array.isArray(data.posts) && data.posts.length > 0) {
           if (JSON.stringify(data.posts) !== JSON.stringify(posts)) {
             posts = data.posts;
             localStorage.setItem('V_POSTS', JSON.stringify(posts));
@@ -532,9 +550,9 @@
         votedUsers: {},
         replies: []
       });
+      renderTimeline(); // 即時反映
       persistDataAndSync();
       clearCanvas();
-      renderTimeline();
     }
 
     function playAnimation(cvsId, historyData, strokeColor = '#10b981') {
@@ -645,7 +663,8 @@
           post.votedUsers[emoji] = myId;
           post.reactions[emoji] = (post.reactions[emoji] || 0) + 1;
         }
-        persistDataAndSync(); renderTimeline();
+        renderTimeline();
+        persistDataAndSync();
       }
     }
 
@@ -674,7 +693,9 @@
         if (!post.replies) post.replies = [];
         const now = new Date();
         post.replies.push({ id: 'R_' + Date.now(), author: getUserName(), uid: getDeviceId(), time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`, text: txt });
-        persistDataAndSync(); closeModal('repModal'); renderTimeline();
+        renderTimeline();
+        persistDataAndSync(); 
+        closeModal('repModal');
       }
     }
 
@@ -685,7 +706,9 @@
         if (!post.replies) post.replies = [];
         const now = new Date();
         post.replies.push({ id: 'R_' + Date.now(), author: getUserName(), uid: getDeviceId(), time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`, strokes: replyHistory });
-        persistDataAndSync(); closeModal('repModal'); renderTimeline();
+        renderTimeline();
+        persistDataAndSync(); 
+        closeModal('repModal'); 
       }
     }
 
@@ -694,7 +717,8 @@
         const post = posts.find(x => x.id === postId);
         if (post && post.replies) {
           post.replies = post.replies.filter(r => r.id !== replyId);
-          persistDataAndSync(); renderTimeline();
+          renderTimeline();
+          persistDataAndSync();
         }
       }
     }
@@ -739,7 +763,8 @@
     function deletePost(id) {
       if (confirm('削除しますか？')) {
         posts = posts.filter(x => x.id !== id);
-        persistDataAndSync(); renderTimeline();
+        renderTimeline();
+        persistDataAndSync();
       }
     }
 
@@ -776,16 +801,17 @@
       const titleVal = document.getElementById('eventTitleInput').value.trim();
       if (!dateVal || !titleVal) return;
       events.push({ id: 'E_' + Date.now(), date: dateVal, title: titleVal });
-      persistDataAndSync();
       document.getElementById('eventTitleInput').value = '';
-      renderEventList(); renderCalendar();
+      renderEventList(); 
+      renderCalendar();
+      persistDataAndSync();
     }
 
     function renderEventList() {
       document.getElementById('eventListContainer').innerHTML = events.map(e => `
         <div style="background:#020408;padding:6px 8px;border-radius:6px;font-size:0.75rem;display:flex;justify-content:space-between;border:1px solid #374151;">
           <span>${e.date}: ${e.title}</span>
-          <button class="del" onclick="events=events.filter(x=>x.id!=='${e.id}');persistDataAndSync();renderEventList();renderCalendar();">削除</button>
+          <button class="del" onclick="events=events.filter(x=>x.id!=='${e.id}');renderEventList();renderCalendar();persistDataAndSync();">削除</button>
         </div>`).join('');
     }
 
@@ -806,9 +832,9 @@
           }
         });
         
-        persistDataAndSync();
         updateAuthorDisplay();
         renderTimeline();
+        persistDataAndSync();
         closeModal('nameModal');
       }
     }
@@ -818,4 +844,3 @@
   </script>
 </body>
 </html>
-
