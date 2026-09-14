@@ -124,7 +124,7 @@
       <div class="c-wrap" id="viewWrap" style="flex:1; height:auto;"><img id="viewBgImg" class="bg-img" style="display:none;"><canvas id="viewCvs"></canvas></div>
       <div class="tools" style="flex-wrap:wrap; gap:8px;">
         <button class="btn" id="viewReplayBtn" style="background:var(--primary); color:#000;">▶ アニメ再生</button>
-        <button class="btn" id="saveImageBtn" style="background:var(--reply); color:white; display:none;" onclick="downloadAttachedImage()">📥 デバイスに画像保存</button>
+        <button class="btn" id="saveImageBtn" style="background:var(--reply); color:white; display:none;" onclick="downloadAttachedImage()">📥 画像のみ保存</button>
         <button class="btn" onclick="closeModal('viewModal')" style="margin-left:auto;">閉じる</button>
       </div>
     </div>
@@ -630,12 +630,30 @@
 
     function downloadAttachedImage() {
       if (!currentViewImgData) return;
-      const a = document.createElement('a');
-      a.href = currentViewImgData;
-      a.download = 'vil_canvas_' + Date.now() + '.jpg';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      
+      // DataURLをBlobに変換してファイルとして強制ダウンロードさせる
+      fetch(currentViewImgData)
+        .then(res => res.blob())
+        .then(blob => {
+          const blobUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = 'vil_canvas_' + Date.now() + '.jpg';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
+        })
+        .catch(() => {
+          // フォールバック
+          const a = document.createElement('a');
+          a.href = currentViewImgData;
+          a.download = 'vil_canvas_' + Date.now() + '.jpg';
+          a.target = '_blank';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        });
     }
 
     function deletePost(id) {
