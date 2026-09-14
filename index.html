@@ -42,7 +42,8 @@
     .p-body { background: #05070c; border-radius: 6px; height: 110px; width: 100%; position: relative; overflow: hidden; border: 1px solid rgba(16,185,129,0.3); cursor: pointer; }
     .p-body::after { content: '🔍 拡大'; position: absolute; bottom: 3px; right: 5px; background: rgba(0,0,0,0.6); color: #34d399; font-size: 0.6rem; padding: 1px 4px; border-radius: 3px; z-index: 3; }
     .r-bar { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
-    .r-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; padding: 2px 6px; font-size: 0.7rem; color: var(--text); cursor: pointer; display: flex; gap: 3px; }
+    .r-btn { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 10px; padding: 2px 6px; font-size: 0.7rem; color: var(--text); cursor: pointer; display: flex; gap: 3px; align-items: center; }
+    .r-btn.voted { background: rgba(16,185,129,0.2); border-color: var(--primary); color: var(--primary); font-weight: bold; }
     .toggle-rep { background: none; border: none; color: var(--reply); font-size: 0.7rem; font-weight: bold; cursor: pointer; text-align: left; margin-top: 2px; }
     .reps { display: none; margin-top: 4px; padding-left: 8px; border-left: 2px solid var(--reply); flex-direction: column; gap: 4px; }
     .reps.open { display: flex; }
@@ -164,7 +165,7 @@
   </div>
 
   <script>
-    const GAS_ENDPOINT = "ここにGoogleスプレッドシートのウェブアプリURLを貼り付け";
+    const GAS_ENDPOINT = "https://script.google.com/macros/s/AKfycbwdrP07nAfFwcUnmNCvBSGDiKaGDhGaXMeiZXLRvrMyQabi2NvtA8KsQArawMkROLSQ/exec";
     let posts = JSON.parse(localStorage.getItem('V_POSTS')) || [];
     let events = JSON.parse(localStorage.getItem('V_EVTS')) || [];
     let currentImgData = null, strokeStartTime = 0, isEraserActive = false, activeReplyPostId = null;
@@ -180,7 +181,8 @@
       renderTimeline();
       renderCalendar();
       if (GAS_ENDPOINT && GAS_ENDPOINT.startsWith('http')) {
-        setInterval(syncDataWithCloud, 10000);
+        syncDataWithCloud(); // 起動時に即座にクラウドから最新データを取得
+        setInterval(syncDataWithCloud, 10000); // 10秒ごとに自動同期
       }
     };
 
@@ -351,7 +353,6 @@
       saveDraftData();
     }
 
-    // Consolidated Data Storage & Sync Functions
     function persistDataAndSync() {
       try {
         let serializedPosts = JSON.stringify(posts);
@@ -379,16 +380,20 @@
 
     function syncDataWithCloud() {
       fetch(GAS_ENDPOINT).then(res => res.json()).then(data => {
-        if (data.posts && data.posts.length !== posts.length) {
+        let needsUpdate = false;
+        if (data.posts && JSON.stringify(data.posts) !== JSON.stringify(posts)) {
           posts = data.posts;
           localStorage.setItem('V_POSTS', JSON.stringify(posts));
-          renderTimeline();
+          needsUpdate = true;
           document.getElementById('gBadge').style.display = 'inline-block';
         }
-        if (data.events && data.events.length !== events.length) {
+        if (data.events && JSON.stringify(data.events) !== JSON.stringify(events)) {
           events = data.events;
           localStorage.setItem('V_EVTS', JSON.stringify(events));
           renderCalendar();
+        }
+        if (needsUpdate) {
+          renderTimeline();
         }
       }).catch(() => {});
     }
@@ -405,6 +410,7 @@
         strokes: mainHistory,
         image: currentImgData,
         reactions: { '👍': 0, '👌': 0, '🙏': 0 },
+        votedUsers: {},
         replies: []
       });
       persistDataAndSync();
@@ -451,14 +457,24 @@
       const recentPosts = posts.slice(0, 7);
       if (recentPosts.length === 0) { container.innerHTML = '<p style="color:var(--sub); font-size:0.75rem;">投稿はありません</p>'; return; }
       
+      const myId = getDeviceId();
       container.innerHTML = recentPosts.map(post => {
         const cvsId = 'cvs_' + post.id;
         setTimeout(() => playAnimation(cvsId, post.strokes, '#10b981'), 50);
-        const isMyPost = post.uid === getDeviceId();
+        const isMyPost = post.uid === myId;
         const replies = post.replies || [];
         
+        if (!post.votedUsers) post.votedUsers = {};
+        const reactions = post.reactions || { '👍': 0, '👌': 0, '🙏': 0 };
+
+        const makeReactBtn = (emoji) => {
+          const voted = post.votedUsers[emoji] === myId;
+          const count = reactions[emoji] || 0;
+          return `<button class="r-btn ${voted ? 'voted' : ''}" onclick="toggleReaction('${post.id}','${emoji}')">${emoji} ${count}</button>`;
+        };
+
         const repliesHtml = replies.map(rep => {
-          const isMyReply = rep.uid === getDeviceId();
+          const isMyReply = rep.uid === myId;
           const repCvsId = 'rcvs_' + rep.id;
           if (rep.strokes) setTimeout(() => playAnimation(repCvsId, rep.strokes, '#3b82f6'), 50);
           return `<div class="rep-item">
@@ -479,9 +495,9 @@
             ${post.image ? `<img src="${post.image}" class="bg-img">` : ''}<canvas id="${cvsId}"></canvas>
           </div>
           <div class="r-bar">
-            <button class="r-btn" onclick="addReaction('${post.id}','👍')">👍 ${post.reactions?.['👍'] || 0}</button>
-            <button class="r-btn" onclick="addReaction('${post.id}','👌')">👌 ${post.reactions?.['👌'] || 0}</button>
-            <button class="r-btn" onclick="addReaction('${post.id}','🙏')">🙏 ${post.reactions?.['🙏'] || 0}</button>
+            ${makeReactBtn('👍')}
+            ${makeReactBtn('👌')}
+            ${makeReactBtn('🙏')}
             <button class="r-btn" onclick="openReplyModal('${post.id}')" style="color:var(--reply); border-color:var(--reply); margin-left:auto;">💬 返信</button>
           </div>
           ${replies.length > 0 ? `
@@ -492,11 +508,20 @@
       }).join('');
     }
 
-    function addReaction(id, emoji) {
+    function toggleReaction(id, emoji) {
       const post = posts.find(x => x.id === id);
       if (post) {
         if (!post.reactions) post.reactions = { '👍': 0, '👌': 0, '🙏': 0 };
-        post.reactions[emoji] = (post.reactions[emoji] || 0) + 1;
+        if (!post.votedUsers) post.votedUsers = {};
+        
+        const myId = getDeviceId();
+        if (post.votedUsers[emoji] === myId) {
+          post.votedUsers[emoji] = null;
+          post.reactions[emoji] = Math.max(0, (post.reactions[emoji] || 1) - 1);
+        } else {
+          post.votedUsers[emoji] = myId;
+          post.reactions[emoji] = (post.reactions[emoji] || 0) + 1;
+        }
         persistDataAndSync(); renderTimeline();
       }
     }
@@ -621,3 +646,4 @@
   </script>
 </body>
 </html>
+
