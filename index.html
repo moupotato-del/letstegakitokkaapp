@@ -174,11 +174,14 @@
   <!-- 全画面返信入力用 -->
   <div class="modal" id="fullReplyModal">
     <div class="card full-modal" style="background:var(--card); display:flex; flex-direction:column; padding:10px; gap:10px;">
-      <div class="m-head"><span style="color:var(--reply);">⛶ 返信の全画面入力</span><button class="ibtn" onclick="closeFullReplyModal()">✓ 完了</button></div>
+      <div class="m-head">
+        <span style="color:var(--reply);">⛶ 返信の全画面入力</span>
+        <button class="ibtn" onclick="closeFullReplyModal()">✕</button>
+      </div>
       <div class="c-wrap" id="fullReplyWrap" style="flex:1; height:auto; border-color:var(--reply);"><canvas id="fullReplyCvs"></canvas></div>
       <div class="tools">
         <button class="btn" onclick="fullReplyCtx.clearRect(0,0,fullReplyCvs.width,fullReplyCvs.height); replyHistory=[];">クリア</button>
-        <button class="sbtn" style="background:var(--reply); color:white;" onclick="closeFullReplyModal()">完了して反映</button>
+        <button class="sbtn" style="background:var(--reply); color:white;" onclick="submitFullReply()">✓ 完了して返信</button>
       </div>
     </div>
   </div>
@@ -245,7 +248,7 @@
       renderCalendar();
       if (GAS_ENDPOINT && GAS_ENDPOINT.startsWith('http')) {
         syncDataWithCloud();
-        setInterval(syncDataWithCloud, 2800); // 2.8秒間隔に設定
+        setInterval(syncDataWithCloud, 2800);
       }
     };
 
@@ -456,6 +459,12 @@
         replyCtx.clearRect(0, 0, replyCvs.width, replyCvs.height);
         if (replyHistory.length > 0) playAnimation('replyCvs', replyHistory, '#3b82f6');
       }
+    }
+
+    function submitFullReply() {
+      if (replyHistory.length === 0) { alert('手書きしてください'); return; }
+      document.getElementById('fullReplyModal').style.display = 'none';
+      submitDrawReply();
     }
 
     function persistDataAndSync() {
