@@ -245,7 +245,7 @@
       renderCalendar();
       if (GAS_ENDPOINT && GAS_ENDPOINT.startsWith('http')) {
         syncDataWithCloud();
-        setInterval(syncDataWithCloud, 10000);
+        setInterval(syncDataWithCloud, 2800); // 2.8秒間隔に設定
       }
     };
 
