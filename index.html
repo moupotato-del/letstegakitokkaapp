@@ -23,8 +23,6 @@
     }
 
     .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; min-height: 0; padding-bottom: 12px; }
-    
-    /* 境目をがっつり際立たせるカードスタイル */
     .card { background: var(--card); border: 3px solid var(--card-border); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.5); }
     .c-title { font-size: 0.9rem; font-weight: bold; color: var(--primary); display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1f2937; padding-bottom: 8px; }
     
@@ -42,7 +40,6 @@
     .sbtn { background: var(--primary); color: #000; border: none; padding: 9px 20px; border-radius: 8px; font-weight: 900; font-size: 0.85rem; cursor: pointer; margin-left: auto; box-shadow: 0 3px 6px rgba(16,185,129,0.4); }
     .note { font-size: 0.7rem; color: var(--sub); margin-top: -6px; }
     
-    /* タイムラインの投稿ごとの強力な境界線 */
     .post { background: #172033; border: 3px solid #4b5563; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); }
     .p-head { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--sub); border-bottom: 2px solid #27303f; padding-bottom: 6px; }
     .p-body { background: #020408; border-radius: 10px; height: 120px; width: 100%; position: relative; overflow: hidden; border: 2px solid rgba(16,185,129,0.5); cursor: pointer; }
@@ -127,7 +124,7 @@
       <div class="c-wrap" id="viewWrap" style="flex:1; height:auto;"><img id="viewBgImg" class="bg-img" style="display:none;"><canvas id="viewCvs"></canvas></div>
       <div class="tools" style="flex-wrap:wrap; gap:8px;">
         <button class="btn" id="viewReplayBtn" style="background:var(--primary); color:#000;">▶ アニメ再生</button>
-        <button class="btn" id="saveImageBtn" style="background:var(--reply); color:white; display:none;" onclick="downloadAttachedImage()">📥 画像のみ保存</button>
+        <button class="btn" id="saveImageBtn" style="background:var(--reply); color:white; display:none;" onclick="downloadAttachedImage()">📥 デバイスに画像保存</button>
         <button class="btn" onclick="closeModal('viewModal')" style="margin-left:auto;">閉じる</button>
       </div>
     </div>
@@ -195,7 +192,7 @@
     let mainCvs, mainCtx, fullCvs, fullCtx, viewCvs, viewCtx, replyCvs, replyCtx;
     let mainHistory = [], fullHistory = [], replyHistory = [];
     let currentCalDate = new Date();
-    let currentViewImgData = null; // 拡大表示中の画像データ保管用
+    let currentViewImgData = null;
 
     window.onload = () => {
       displayDateBanner();
@@ -635,7 +632,7 @@
       if (!currentViewImgData) return;
       const a = document.createElement('a');
       a.href = currentViewImgData;
-      a.download = 'vil_canvas_image_' + Date.now() + '.jpg';
+      a.download = 'vil_canvas_' + Date.now() + '.jpg';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
