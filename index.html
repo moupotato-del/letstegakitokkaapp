@@ -13,7 +13,6 @@
     .app { display: flex; flex-direction: column; height: 100dvh; max-width: 600px; margin: 0 auto; padding: 8px; gap: 8px; }
     header { display: flex; justify-content: space-between; align-items: center; padding: 2px; flex-shrink: 0; }
     .brand { font-size: 0.95rem; font-weight: 800; color: var(--primary); display: flex; gap: 4px; align-items: center; }
-    .badge { background: var(--red); color: white; font-size: 0.6rem; padding: 2px 5px; border-radius: 8px; display: none; }
     .btns { display: flex; gap: 3px; }
     .ibtn { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 4px 7px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; cursor: pointer; }
     
@@ -55,7 +54,7 @@
     .m-head { font-weight: bold; font-size: 0.9rem; color: var(--primary); display: flex; justify-content: space-between; align-items: center; }
     .m-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
     .d-inp { background: #05070c; border: 1px solid var(--border); color: white; padding: 8px; border-radius: 6px; font-size: 0.85rem; width: 100%; }
-    .cal-sec { height: 195px; flex-shrink: 0; }
+    .cal-sec { height: 205px; flex-shrink: 0; }
     .c-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font-size: 0.7rem; flex: 1; }
     .c-head { font-weight: bold; color: var(--sub); }
     .c-cell { background: #0b0f19; border-radius: 4px; display: flex; flex-direction: column; align-items: center; padding: 2px; font-weight: bold; color: #d1d5db; cursor: pointer; min-height: 24px; }
@@ -67,7 +66,7 @@
 
   <div class="app">
     <header>
-      <div class="brand">VIL CANVAS <span class="badge" id="gBadge">NEW</span></div>
+      <div class="brand">VIL CANVAS</div>
       <div class="btns">
         <button class="ibtn" onclick="openModal('nameModal')">👤 名前</button>
       </div>
@@ -95,7 +94,14 @@
       </section>
 
       <section class="card cal-sec">
-        <div class="c-title"><span id="calMonthTitle">----年--月</span><button class="ibtn" onclick="openEventModal()">＋ 予定</button></div>
+        <div class="c-title">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button class="ibtn" onclick="changeMonth(-1)">◀</button>
+            <span id="calMonthTitle">----年--月</span>
+            <button class="ibtn" onclick="changeMonth(1)">▶</button>
+          </div>
+          <button class="ibtn" onclick="openEventModal()">＋ 予定</button>
+        </div>
         <div class="c-grid"><div class="c-head" style="color:var(--red);">日</div><div class="c-head">月</div><div class="c-head">火</div><div class="c-head">水</div><div class="c-head">木</div><div class="c-head">金</div><div class="c-head" style="color:var(--primary);">土</div></div>
         <div class="c-grid" id="calendarGrid"></div>
       </section>
@@ -172,6 +178,7 @@
     let eraserClickCount = 0, eraserBlinkTimer = null;
     let mainCvs, mainCtx, fullCvs, fullCtx, viewCvs, viewCtx, replyCvs, replyCtx;
     let mainHistory = [], fullHistory = [], replyHistory = [];
+    let currentCalDate = new Date(); // カレンダー表示用
 
     window.onload = () => {
       displayDateBanner();
@@ -181,8 +188,8 @@
       renderTimeline();
       renderCalendar();
       if (GAS_ENDPOINT && GAS_ENDPOINT.startsWith('http')) {
-        syncDataWithCloud(); // 起動時に即座にクラウドから最新データを取得
-        setInterval(syncDataWithCloud, 10000); // 10秒ごとに自動同期
+        syncDataWithCloud();
+        setInterval(syncDataWithCloud, 10000);
       }
     };
 
@@ -204,7 +211,11 @@
       return `hsl(${Math.abs(hash) % 360}, 85%, 65%)`;
     }
 
-    function getUserName() { return localStorage.getItem('V_NAME') || '名無し'; }
+    function getUserName() { 
+      let baseName = localStorage.getItem('V_NAME') || '名無し';
+      return `${baseName} (${getDeviceId()})`; 
+    }
+    
     function updateAuthorDisplay() { document.getElementById('authorDisp').innerHTML = `<span style="color:${generateColorFromString(getDeviceId())};">${getUserName()}</span>`; }
 
     function saveDraftData() { localStorage.setItem('V_DRAFT', JSON.stringify({ history: mainHistory, imgData: currentImgData })); }
@@ -385,7 +396,6 @@
           posts = data.posts;
           localStorage.setItem('V_POSTS', JSON.stringify(posts));
           needsUpdate = true;
-          document.getElementById('gBadge').style.display = 'inline-block';
         }
         if (data.events && JSON.stringify(data.events) !== JSON.stringify(events)) {
           events = data.events;
@@ -597,23 +607,29 @@
     }
 
     /* Calendar */
+    function changeMonth(direction) {
+      currentCalDate.setMonth(currentCalDate.getMonth() + direction);
+      renderCalendar();
+    }
+
     function renderCalendar() {
-      const now = new Date(), year = now.getFullYear(), month = now.getMonth();
+      const year = currentCalDate.getFullYear(), month = currentCalDate.getMonth();
       document.getElementById('calMonthTitle').innerText = `${year}年 ${month + 1}月`;
       const firstDayIndex = new Date(year, month, 1).getDay();
       const totalDays = new Date(year, month + 1, 0).getDate();
       let gridHtml = '';
       for (let i = 0; i < firstDayIndex; i++) gridHtml += '<div></div>';
-      let todayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`, hasEventToday = false;
+      
+      const now = new Date();
+      let todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
       
       for (let day = 1; day <= totalDays; day++) {
         let dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
         let hasEvent = events.some(e => e.date === dateStr);
-        if (hasEvent && dateStr === todayStr) hasEventToday = true;
-        gridHtml += `<div class="c-cell ${day === now.getDate() ? 'today' : ''}" onclick="document.getElementById('eventDateInput').value='${dateStr}';openEventModal();">${day}${hasEvent ? '<div class="dot"></div>' : ''}</div>`;
+        let isToday = (dateStr === todayStr);
+        gridHtml += `<div class="c-cell ${isToday ? 'today' : ''}" onclick="document.getElementById('eventDateInput').value='${dateStr}';openEventModal();">${day}${hasEvent ? '<div class="dot"></div>' : ''}</div>`;
       }
       document.getElementById('calendarGrid').innerHTML = gridHtml;
-      document.getElementById('gBadge').style.display = hasEventToday ? 'inline-block' : 'none';
     }
 
     function openEventModal() { document.getElementById('evtModal').style.display = 'flex'; renderEventList(); }
@@ -646,3 +662,4 @@
   </script>
 </body>
 </html>
+
