@@ -82,7 +82,8 @@
     #cleanScreenModal img { width: 100% !important; height: 100% !important; object-fit: contain; position: absolute; inset: 0; z-index: 1; }
     .close-clean-btn { position: fixed; top: 15px; right: 15px; background: rgba(0,0,0,0.7); color: white; border: 2px solid #fff; border-radius: 50%; width: 40px; height: 40px; font-weight: bold; font-size: 1rem; cursor: pointer; z-index: 20001; display: flex; justify-content: center; align-items: center; }
 
-    .cal-sec { height: 230px; flex-shrink: 0; }
+    /* カレンダー全体を白系枠線で囲む */
+    .cal-sec { height: 245px; flex-shrink: 0; border: 2px solid #ffffff; }
     .c-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 0.75rem; flex: 1; }
     .c-head { font-weight: bold; color: var(--sub); }
     .c-cell { background: #030712; border: 2px solid #27303f; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2px; font-weight: bold; color: #d1d5db; cursor: pointer; min-height: 30px; }
@@ -241,6 +242,7 @@
     let mainCvs, mainCtx, fullCvs, fullCtx, viewCvs, viewCtx, replyCvs, replyCtx, fullReplyCvs, fullReplyCtx;
     let mainHistory = [], fullHistory = [], replyHistory = [], currentCleanPost = null;
     let currentCalDate = new Date();
+    let isOlderPostsOpen = false;
 
     window.onload = () => {
       displayDateBanner();
@@ -550,7 +552,7 @@
         votedUsers: {},
         replies: []
       });
-      renderTimeline(); // 即時反映
+      renderTimeline();
       persistDataAndSync();
       clearCanvas();
     }
@@ -589,64 +591,85 @@
       return `${Math.floor(hours / 24)}日前`;
     }
 
-    function renderTimeline() {
-      const container = document.getElementById('timeline');
-      const recentPosts = posts.slice(0, 7);
-      if (recentPosts.length === 0) { container.innerHTML = '<p style="color:var(--sub); font-size:0.75rem;">投稿はありません</p>'; return; }
-      
+    function renderPostItem(post) {
+      const cvsId = 'cvs_' + post.id;
+      setTimeout(() => playAnimation(cvsId, post.strokes, '#10b981'), 50);
       const myId = getDeviceId();
-      container.innerHTML = recentPosts.map(post => {
-        const cvsId = 'cvs_' + post.id;
-        setTimeout(() => playAnimation(cvsId, post.strokes, '#10b981'), 50);
-        const isMyPost = post.uid === myId;
-        const replies = post.replies || [];
-        
-        if (!post.votedUsers) post.votedUsers = {};
-        const reactions = post.reactions || { '👍': 0, '👌': 0, '🙏': 0 };
+      const isMyPost = post.uid === myId;
+      const replies = post.replies || [];
+      
+      if (!post.votedUsers) post.votedUsers = {};
+      const reactions = post.reactions || { '👍': 0, '👌': 0, '🙏': 0 };
 
-        const makeReactBtn = (emoji) => {
-          const voted = post.votedUsers[emoji] === myId;
-          const count = reactions[emoji] || 0;
-          return `<button class="r-btn ${voted ? 'voted' : ''}" onclick="toggleReaction('${post.id}','${emoji}')">${emoji} ${count}</button>`;
-        };
+      const makeReactBtn = (emoji) => {
+        const voted = post.votedUsers[emoji] === myId;
+        const count = reactions[emoji] || 0;
+        return `<button class="r-btn ${voted ? 'voted' : ''}" onclick="toggleReaction('${post.id}','${emoji}')">${emoji} ${count}</button>`;
+      };
 
-        const repliesHtml = replies.map(rep => {
-          const isMyReply = rep.uid === myId;
-          const repCvsId = 'rcvs_' + rep.id;
-          if (rep.strokes) setTimeout(() => playAnimation(repCvsId, rep.strokes, '#3b82f6'), 50);
-          return `<div class="rep-item">
-            <div style="display:flex; justify-content:space-between; font-size:0.65rem; opacity:0.8;">
-              <span><strong style="color:${generateColorFromString(rep.uid)};">${rep.author}</strong> (${rep.time})</span>
-              ${isMyReply ? `<button class="del" onclick="deleteReply('${post.id}','${rep.id}')">削除</button>` : ''}
-            </div>
-            ${rep.strokes ? `<div style="height:60px;position:relative;background:#020408;border-radius:6px;margin-top:2px;"><canvas id="${repCvsId}"></canvas></div>` : `<div style="color:#60a5fa;margin-top:2px;">${rep.text}</div>`}
-          </div>`;
-        }).join('');
-
-        return `<div class="post">
-          <div class="p-head">
-            <span style="font-weight:bold; color:${generateColorFromString(post.uid)};">${post.author}</span>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <span style="color:var(--primary); font-weight:bold;">${getTimeAgo(post.ts)}</span>
-              <span style="color:var(--sub); font-size:0.7rem;">(${post.time})</span>
-              ${isMyPost ? `<button class="del" onclick="deletePost('${post.id}')">削除</button>` : ''}
-            </div>
+      const repliesHtml = replies.map(rep => {
+        const isMyReply = rep.uid === myId;
+        const repCvsId = 'rcvs_' + rep.id;
+        if (rep.strokes) setTimeout(() => playAnimation(repCvsId, rep.strokes, '#3b82f6'), 50);
+        return `<div class="rep-item">
+          <div style="display:flex; justify-content:space-between; font-size:0.65rem; opacity:0.8;">
+            <span><strong style="color:${generateColorFromString(rep.uid)};">${rep.author}</strong> (${rep.time})</span>
+            ${isMyReply ? `<button class="del" onclick="deleteReply('${post.id}','${rep.id}')">削除</button>` : ''}
           </div>
-          <div class="p-body" onclick="openViewModal('${post.id}')">
-            ${post.image ? `<img src="${post.image}" class="bg-img" style="display:block !important;">` : ''}<canvas id="${cvsId}"></canvas>
-          </div>
-          <div class="r-bar">
-            ${makeReactBtn('👍')}
-            ${makeReactBtn('👌')}
-            ${makeReactBtn('🙏')}
-            <button class="r-btn" onclick="openReplyModal('${post.id}')" style="color:var(--reply); border-color:#2a4365; margin-left:auto;">💬 返信</button>
-          </div>
-          ${replies.length > 0 ? `
-            <button class="toggle-rep" onclick="toggleReplies('${post.id}')">💬 コメント (${replies.length}件)</button>
-            <div class="reps" id="reps_${post.id}">${repliesHtml}</div>
-          ` : ''}
+          ${rep.strokes ? `<div style="height:60px;position:relative;background:#020408;border-radius:6px;margin-top:2px;"><canvas id="${repCvsId}"></canvas></div>` : `<div style="color:#60a5fa;margin-top:2px;">${rep.text}</div>`}
         </div>`;
       }).join('');
+
+      return `<div class="post">
+        <div class="p-head">
+          <span style="font-weight:bold; color:${generateColorFromString(post.uid)};">${post.author}</span>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="color:var(--primary); font-weight:bold;">${getTimeAgo(post.ts)}</span>
+            <span style="color:var(--sub); font-size:0.7rem;">(${post.time})</span>
+            ${isMyPost ? `<button class="del" onclick="deletePost('${post.id}')">削除</button>` : ''}
+          </div>
+        </div>
+        <div class="p-body" onclick="openViewModal('${post.id}')">
+          ${post.image ? `<img src="${post.image}" class="bg-img" style="display:block !important;">` : ''}<canvas id="${cvsId}"></canvas>
+        </div>
+        <div class="r-bar">
+          ${makeReactBtn('👍')}
+          ${makeReactBtn('👌')}
+          ${makeReactBtn('🙏')}
+          <button class="r-btn" onclick="openReplyModal('${post.id}')" style="color:var(--reply); border-color:#2a4365; margin-left:auto;">💬 返信</button>
+        </div>
+        ${replies.length > 0 ? `
+          <button class="toggle-rep" onclick="toggleReplies('${post.id}')">💬 コメント (${replies.length}件)</button>
+          <div class="reps" id="reps_${post.id}">${repliesHtml}</div>
+        ` : ''}
+      </div>`;
+    }
+
+    function renderTimeline() {
+      const container = document.getElementById('timeline');
+      if (posts.length === 0) { container.innerHTML = '<p style="color:var(--sub); font-size:0.75rem;">投稿はありません</p>'; return; }
+      
+      const recentPosts = posts.slice(0, 5);
+      const olderPosts = posts.slice(5);
+
+      let html = recentPosts.map(post => renderPostItem(post)).join('');
+
+      if (olderPosts.length > 0) {
+        html += `
+          <button class="toggle-rep" style="background:#1f2937; border:2px solid var(--border); text-align:center; padding:10px; font-weight:bold; color:var(--text); margin-top:6px;" onclick="toggleOlderPosts()">
+            ${isOlderPostsOpen ? '▲ 過去の投稿を折りたたむ' : `▼ 過去の投稿をもっと見る (${olderPosts.length}件)`}
+          </button>
+          <div id="olderPostsContainer" style="display:${isOlderPostsOpen ? 'flex' : 'none'}; flex-direction:column; gap:12px; margin-top:6px;">
+            ${olderPosts.map(post => renderPostItem(post)).join('')}
+          </div>
+        `;
+      }
+      container.innerHTML = html;
+    }
+
+    function toggleOlderPosts() {
+      isOlderPostsOpen = !isOlderPostsOpen;
+      renderTimeline();
     }
 
     function toggleReaction(id, emoji) {
@@ -844,3 +867,4 @@
   </script>
 </body>
 </html>
+
