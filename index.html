@@ -65,6 +65,9 @@
     .reps.open { display: flex; }
     .rep-item { background: #111827; padding: 8px 10px; border-radius: 8px; font-size: 0.75rem; border: 2px solid rgba(59,130,246,0.4); color: var(--reply); }
     
+    .rep-canvas-box { position: relative; height: 60px; background: #020408; border-radius: 6px; margin-top: 2px; cursor: pointer; border: 1px solid rgba(59,130,246,0.3); }
+    .rep-canvas-box::after { content: '拡大'; position: absolute; bottom: 4px; right: 6px; background: rgba(0,0,0,0.7); color: #60a5fa; font-size: 0.55rem; padding: 2px 5px; border-radius: 4px; z-index: 3; font-weight: bold; }
+
     .del { background: transparent; border: 1px solid #4b5563; color: #9ca3af; font-size: 0.65rem; font-weight: normal; cursor: pointer; padding: 2px 6px; border-radius: 4px; opacity: 0.8; }
     
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 10000; justify-content: center; align-items: center; padding: 10px; }
@@ -338,11 +341,11 @@
           <span style="font-size:0.75rem; color:var(--reply); font-weight:bold;">手書きで返信（オプション）:</span>
           <button class="btn" style="background:var(--reply); color:white; padding:4px 8px; font-size:0.7rem;" onclick="openFullReplyModalFromRepModal()">全画面で書く</button>
         </div>
-        <div class="c-wrap" style="height:110px; border-color:var(--reply);" id="replyWrap"><canvas id="replyCvs"></canvas></div>
+        <div class="c-wrap" style="height:110px; border-color:var(--reply); cursor:pointer;" id="replyWrap" onclick="openFullReplyModalFromRepModal()"><canvas id="replyCvs"></canvas></div>
         <div class="tools">
-          <button class="btn" onclick="replyCtx.clearRect(0,0,replyCvs.width,replyCvs.height); replyHistory=[];">クリア</button>
-          <button class="btn" style="background:var(--reply); color:white;" onclick="playAnimation('replyCvs', replyHistory, '#3b82f6')">プレビュー</button>
-          <button class="sbtn" style="background:var(--reply); color:white;" onclick="submitReply()">送信</button>
+          <button class="btn" onclick="replyCtx.clearRect(0,0,replyCvs.width,replyCvs.height); replyHistory=[]; event.stopPropagation();">クリア</button>
+          <button class="btn" style="background:var(--reply); color:white;" onclick="playAnimation('replyCvs', replyHistory, '#3b82f6'); event.stopPropagation();">プレビュー</button>
+          <button class="sbtn" style="background:var(--reply); color:white;" onclick="submitReply(); event.stopPropagation();">送信</button>
         </div>
       </div>
     </div>
@@ -582,7 +585,7 @@
         return { x: clientX - rect.left, y: clientY - rect.top };
       };
 
-      cvs.onmousedown = cvs.ontouchstart = e => {
+      const startDraw = e => {
         isDrawing = true;
         if (getHistoryCallback().length === 0) strokeStartTime = Date.now();
         const pos = getPos(e);
@@ -592,7 +595,7 @@
         currentStroke = [{ type: 'start', x: pos.x, y: pos.y, t: Date.now() - strokeStartTime, erase: isEraserActive, w: isEraserActive ? 12 : 3.5 }];
       };
 
-      cvs.onmousemove = cvs.ontouchmove = e => {
+      const moveDraw = e => {
         if (!isDrawing) return;
         e.preventDefault();
         const pos = getPos(e);
@@ -600,7 +603,7 @@
         currentStroke.push({ type: 'move', x: pos.x, y: pos.y, t: Date.now() - strokeStartTime });
       };
 
-      cvs.onmouseup = cvs.ontouchend = () => {
+      const endDraw = () => {
         if (isDrawing) {
           isDrawing = false;
           if (currentStroke.length > 0) {
@@ -609,6 +612,17 @@
           }
         }
       };
+
+      cvs.onmousedown = startDraw;
+      cvs.ontouchstart = startDraw;
+      
+      cvs.onmousemove = moveDraw;
+      cvs.ontouchmove = moveDraw;
+      
+      cvs.onmouseup = endDraw;
+      cvs.ontouchend = endDraw;
+      cvs.onmouseleave = endDraw;
+      cvs.ontouchcancel = endDraw;
     }
 
     function toggleEraseMode() {
@@ -707,7 +721,6 @@
     }
 
     function submitFullReplyAndFinish() {
-      if (replyHistory.length === 0) { alert('手書きしてください'); return; }
       document.getElementById('fullReplyModal').style.display = 'none';
       submitReply();
     }
@@ -875,7 +888,7 @@
             <span><strong>${rep.author}</strong> (${rep.time})</span>
             ${isMyReply ? `<button class="del" onclick="deleteReply('${post.id}','${rep.id}')">削除</button>` : ''}
           </div>
-          ${rep.strokes && rep.strokes.length > 0 ? `<div style="height:60px;position:relative;background:#020408;border-radius:6px;margin-top:2px;"><canvas id="${repCvsId}"></canvas></div>` : ''}
+          ${rep.strokes && rep.strokes.length > 0 ? `<div class="rep-canvas-box" onclick="openViewModalForReplyStrokes(${JSON.stringify(rep.strokes).replace(/"/g, '&quot;')}, '${rep.author}')"><canvas id="${repCvsId}"></canvas></div>` : ''}
           ${rep.text ? `<div style="color:#60a5fa;margin-top:2px; word-break:break-all;">${rep.text}</div>` : ''}
         </div>`;
       }).join('');
@@ -903,6 +916,21 @@
           <div class="reps" id="reps_${post.id}">${repliesHtml}</div>
         ` : ''}
       </div>`;
+    }
+
+    function openViewModalForReplyStrokes(strokes, authorName) {
+      document.getElementById('viewModalTitle').innerHTML = `${authorName} さんの返信`;
+      document.getElementById('viewModal').style.display = 'flex';
+      document.getElementById('cleanScreenBtn').style.display = 'none';
+
+      setTimeout(() => {
+        viewCvs = document.getElementById('viewCvs'); const wrap = document.getElementById('viewWrap');
+        viewCvs.width = wrap.clientWidth; viewCvs.height = wrap.clientHeight;
+        let bg = document.getElementById('viewBgImg');
+        bg.style.display = 'none'; bg.src = '';
+        playAnimation('viewCvs', strokes, '#3b82f6');
+        document.getElementById('viewReplayBtn').onclick = () => playAnimation('viewCvs', strokes, '#3b82f6');
+      }, 50);
     }
 
     function renderTimeline() {
@@ -1125,6 +1153,7 @@
       renderEventList(); 
     }
     
+    `saveEvent`
     function saveEvent() {
       const dateVal = document.getElementById('eventDateInput').value;
       const titleVal = document.getElementById('eventTitleInput').value.trim();
