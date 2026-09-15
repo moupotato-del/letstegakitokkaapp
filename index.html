@@ -880,13 +880,14 @@
       const repliesHtml = replies.map(rep => {
         const isMyReply = rep.uid === myId;
         const repCvsId = 'rcvs_' + rep.id;
+        const strokesJson = rep.strokes ? JSON.stringify(rep.strokes).replace(/"/g, '&quot;') : '[]';
         if (rep.strokes && rep.strokes.length > 0) setTimeout(() => playAnimation(repCvsId, rep.strokes, '#3b82f6'), 50);
         return `<div class="rep-item">
           <div style="display:flex; justify-content:space-between; font-size:0.65rem; opacity:0.8;">
             <span><strong>${rep.author}</strong> (${rep.time})</span>
             ${isMyReply ? `<button class="del" onclick="deleteReply('${post.id}','${rep.id}')">削除</button>` : ''}
           </div>
-          ${rep.strokes && rep.strokes.length > 0 ? `<div class="rep-canvas-box" onclick="openViewModalForReplyStrokes(${JSON.stringify(rep.strokes).replace(/"/g, '&quot;')}, '${rep.author}')"><canvas id="${repCvsId}"></canvas></div>` : ''}
+          ${rep.strokes && rep.strokes.length > 0 ? `<div class="rep-canvas-box" onclick="openViewModalForReplyStrokes(${strokesJson}, '${rep.author}')"><canvas id="${repCvsId}"></canvas></div>` : ''}
           ${rep.text ? `<div style="color:#60a5fa;margin-top:2px; word-break:break-all;">${rep.text}</div>` : ''}
         </div>`;
       }).join('');
@@ -1207,4 +1208,3 @@
   </script>
 </body>
 </html>
-
