@@ -75,7 +75,22 @@
     .m-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
     .d-inp { background: #020408; border: 2px solid var(--border); color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; width: 100%; }
     
-    /* 投稿中ローディングオーバーレイ（pointer-events: noneにより後ろのスクロールや操作が可能） */
+    /* 電卓専用グリッドスタイル */
+    .calc-display {
+      background: #020408; border: 2px solid var(--border); border-radius: 10px; padding: 12px;
+      font-size: 1.5rem; font-weight: bold; text-align: right; color: var(--primary); min-height: 50px;
+      word-break: break-all; word-wrap: break-word;
+    }
+    .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .calc-btn {
+      background: #1f2937; border: 2px solid var(--border); border-radius: 10px; padding: 14px 0;
+      font-size: 1rem; font-weight: bold; color: var(--text); cursor: pointer; text-align: center;
+    }
+    .calc-btn.op { background: #1e293b; color: var(--reply); border-color: #334155; }
+    .calc-btn.act { background: rgba(239,68,68,0.2); color: var(--red); border-color: var(--red); }
+    .calc-btn.eq { background: var(--primary); color: #000; border-color: var(--primary); }
+
+    /* 共通ローディングオーバーレイ */
     #loadingOverlay { display: none; position: fixed; inset: 0; background: rgba(3,7,18,0.25); z-index: 30000; justify-content: center; align-items: center; pointer-events: none; }
     .loading-box { 
       background: linear-gradient(145deg, #111827, #06241b); 
@@ -116,11 +131,11 @@
 </head>
 <body>
 
-  <!-- 投稿中ポップアップ（文言のみ・スクロール可能） -->
+  <!-- 投稿中・削除中ポップアップ -->
   <div id="loadingOverlay">
     <div class="loading-box">
       <div class="spinner"></div>
-      <div style="font-size: 1.05rem; font-weight: 900; color: var(--primary); letter-spacing: 0.5px;">⏳ 投稿中...</div>
+      <div id="loadingText" style="font-size: 1.05rem; font-weight: 900; color: var(--primary); letter-spacing: 0.5px;">⏳ 投稿中...</div>
     </div>
   </div>
 
@@ -128,8 +143,12 @@
     <header>
       <div class="brand">VIL CANVAS</div>
       <div class="btns">
-        <button class="ibtn" id="headerNameBtn" onclick="openProfileModal()" style="border-color:var(--border); font-size:0.7rem; font-weight:bold;"></button>
+        <!-- 電卓ボタン（カレンダーの左） -->
+        <button class="ibtn" onclick="openCalcModal()" style="border-color:var(--reply); color:var(--reply);">🧮 電卓</button>
+        <!-- カレンダーボタン（名前の左） -->
         <button class="ibtn" onclick="openCalendarModal()" style="border-color:var(--primary); color:var(--primary);">📅 カレンダー</button>
+        <!-- 名前ボタン（最右） -->
+        <button class="ibtn" id="headerNameBtn" onclick="openProfileModal()" style="border-color:var(--border); font-size:0.7rem; font-weight:bold;"></button>
       </div>
     </header>
 
@@ -156,6 +175,39 @@
         </div>
         <div id="timeline" style="display:flex; flex-direction:column; gap:12px;"></div>
       </section>
+    </div>
+  </div>
+
+  <!-- 電卓モーダル -->
+  <div class="modal" id="calcModal" onclick="closeModal('calcModal')">
+    <div class="m-card" style="max-width:340px;" onclick="event.stopPropagation()">
+      <div class="m-head">
+        <span>🧮 かんたん電卓</span>
+        <button class="ibtn" onclick="closeModal('calcModal')">✕</button>
+      </div>
+      <div class="m-body" style="gap:10px;">
+        <div class="calc-display" id="calcDisplay">0</div>
+        <div class="calc-grid">
+          <button class="calc-btn act" onclick="calcClear()">AC</button>
+          <button class="calc-btn op" onclick="calcAppend('/')">÷</button>
+          <button class="calc-btn op" onclick="calcAppend('*')">×</button>
+          <button class="calc-btn op" onclick="calcBackSpace()">⌫</button>
+          <button class="calc-btn" onclick="calcAppend('7')">7</button>
+          <button class="calc-btn" onclick="calcAppend('8')">8</button>
+          <button class="calc-btn" onclick="calcAppend('9')">9</button>
+          <button class="calc-btn op" onclick="calcAppend('-')">-</button>
+          <button class="calc-btn" onclick="calcAppend('4')">4</button>
+          <button class="calc-btn" onclick="calcAppend('5')">5</button>
+          <button class="calc-btn" onclick="calcAppend('6')">6</button>
+          <button class="calc-btn op" onclick="calcAppend('+')">+</button>
+          <button class="calc-btn" onclick="calcAppend('1')">1</button>
+          <button class="calc-btn" onclick="calcAppend('2')">2</button>
+          <button class="calc-btn" onclick="calcAppend('3')">3</button>
+          <button class="calc-btn eq" onclick="calcCalculate()" style="grid-row: span 2; height: auto;">=</button>
+          <button class="calc-btn" onclick="calcAppend('0')" style="grid-column: span 2;">0</button>
+          <button class="calc-btn" onclick="calcAppend('.')">.</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -281,7 +333,7 @@
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
           <span style="font-size:0.75rem; color:var(--reply); font-weight:bold;">手書きで返信 (ブルー):</span>
-          <button class="btn" style="background:var(--reply); color:white; padding:4px 8px; font-size:0.7rem;" onclick="openFullReplyModal()">⛶ 全画面で書く</button>
+          <button class="btn" style="background:var(--reply); color:white; padding:4px 8px; font-size:0.7rem;" onclick="openFullReplyModalFromRepModal()">⛶ 全画面で書く</button>
         </div>
         <div class="c-wrap" style="height:110px; border-color:var(--reply);" id="replyWrap"><canvas id="replyCvs"></canvas></div>
         <div class="tools">
@@ -326,6 +378,9 @@
     let selectedDateStr = null;
     let isOlderPostsOpen = false;
     let isSyncing = false;
+
+    // 電卓用変数
+    let calcExpression = "0";
 
     window.onload = () => {
       displayDateBanner();
@@ -390,10 +445,59 @@
         return;
       }
       if (confirm(`あなたが投稿した ${myPostsCount} 件の投稿をすべて一括削除しますか？`)) {
+        showLoading('🗑️ 削除中...');
         posts = posts.filter(p => p.uid !== myId);
         renderTimeline();
         closeModal('profileModal');
         persistDataAndSync();
+      }
+    }
+
+    /* 電卓の機能 */
+    function openCalcModal() {
+      calcExpression = "0";
+      updateCalcDisplay();
+      openModal('calcModal');
+    }
+
+    function updateCalcDisplay() {
+      document.getElementById('calcDisplay').innerText = calcExpression;
+    }
+
+    function calcClear() {
+      calcExpression = "0";
+      updateCalcDisplay();
+    }
+
+    function calcBackSpace() {
+      if (calcExpression.length > 1) {
+        calcExpression = calcExpression.slice(0, -1);
+      } else {
+        calcExpression = "0";
+      }
+      updateCalcDisplay();
+    }
+
+    function calcAppend(val) {
+      if (calcExpression === "0" && val !== '.') {
+        calcExpression = val;
+      } else {
+        calcExpression += val;
+      }
+      updateCalcDisplay();
+    }
+
+    function calcCalculate() {
+      try {
+        // 安全に計算を実行（evalの代わりにFunctionを使用）
+        let sanitized = calcExpression.replace(/×/g, '*').replace(/÷/g, '/');
+        let result = Function('"use strict";return (' + sanitized + ')')();
+        calcExpression = String(result);
+        updateCalcDisplay();
+      } catch (e) {
+        calcExpression = "エラー";
+        updateCalcDisplay();
+        setTimeout(() => { calcExpression = "0"; updateCalcDisplay(); }, 1200);
       }
     }
 
@@ -556,6 +660,11 @@
       saveDraftData();
     }
 
+    function openFullReplyModalFromRepModal() {
+      closeModal('repModal');
+      openFullReplyModal();
+    }
+
     function openFullReplyModal() {
       document.getElementById('fullReplyModal').style.display = 'flex';
       setTimeout(() => {
@@ -573,10 +682,13 @@
 
     function closeFullReplyModalOnly() {
       document.getElementById('fullReplyModal').style.display = 'none';
-      if (replyCtx && replyCvs) {
-        replyCtx.clearRect(0, 0, replyCvs.width, replyCvs.height);
-        if (replyHistory.length > 0) playAnimation('replyCvs', replyHistory, '#3b82f6');
-      }
+      openModal('repModal');
+      setTimeout(() => {
+        if (replyCtx && replyCvs) {
+          replyCtx.clearRect(0, 0, replyCvs.width, replyCvs.height);
+          if (replyHistory.length > 0) playAnimation('replyCvs', replyHistory, '#3b82f6');
+        }
+      }, 50);
     }
 
     function submitFullReplyAndFinish() {
@@ -585,7 +697,8 @@
       submitDrawReply();
     }
 
-    function showLoading() {
+    function showLoading(text = '⏳ 投稿中...') {
+      document.getElementById('loadingText').innerText = text;
       document.getElementById('loadingOverlay').style.display = 'flex';
       isSyncing = true;
     }
@@ -596,7 +709,6 @@
     }
 
     function persistDataAndSync() {
-      showLoading();
       try {
         let serializedPosts = JSON.stringify(posts);
         while (true) {
@@ -670,6 +782,7 @@
 
     function submitPost() {
       if (mainHistory.length === 0 && !currentImgData) { alert('入力してください'); return; }
+      showLoading('⏳ 投稿中...');
       const now = new Date();
       posts.unshift({
         id: 'P_' + Date.now(),
@@ -1058,4 +1171,3 @@
   </script>
 </body>
 </html>
-
