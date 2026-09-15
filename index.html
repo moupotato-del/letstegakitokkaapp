@@ -13,7 +13,7 @@
     .app { display: flex; flex-direction: column; height: 100dvh; max-width: 600px; margin: 0 auto; padding: 10px; gap: 14px; }
     header { display: flex; justify-content: space-between; align-items: center; padding: 4px 2px; flex-shrink: 0; }
     .brand { font-size: 1rem; font-weight: 900; color: var(--primary); display: flex; gap: 4px; align-items: center; letter-spacing: 0.5px; }
-    .btns { display: flex; gap: 6px; }
+    .btns { display: flex; gap: 6px; align-items: center; }
     .ibtn { background: #1f2937; border: 2px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
     
     .date-banner {
@@ -75,7 +75,7 @@
     .m-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
     .d-inp { background: #020408; border: 2px solid var(--border); color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; width: 100%; }
     
-    /* 投稿中ローディングオーバーレイ（大・分かりやすく） */
+    /* 投稿中ローディングオーバーレイ */
     #loadingOverlay { display: none; position: fixed; inset: 0; background: rgba(3,7,18,0.85); z-index: 30000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
     .loading-box { 
       background: linear-gradient(145deg, #111827, #06241b); 
@@ -111,6 +111,7 @@
     .c-head { font-weight: bold; color: var(--sub); padding: 4px 0; }
     .c-cell { background: #030712; border: 2px solid #27303f; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 2px; font-weight: bold; color: #d1d5db; cursor: pointer; min-height: 42px; }
     .c-cell.today { background: rgba(16,185,129,0.3); color: var(--primary); border: 2px solid var(--primary); }
+    .c-cell.selected { border: 2px solid var(--reply); background: rgba(59,130,246,0.2); }
     .dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; margin-top: 4px; }
   </style>
 </head>
@@ -129,8 +130,9 @@
     <header>
       <div class="brand">VIL CANVAS</div>
       <div class="btns">
+        <!-- ヘッダー右上に現在の名前（ID付き）を表示するボタンを配置 -->
+        <button class="ibtn" id="headerNameBtn" onclick="openModal('nameModal')" style="border-color:var(--border); font-size:0.7rem; font-weight:bold;"></button>
         <button class="ibtn" onclick="openCalendarModal()" style="border-color:var(--primary); color:var(--primary);">📅 カレンダー</button>
-        <button class="ibtn" onclick="openModal('nameModal')">👤 名前</button>
       </div>
     </header>
 
@@ -180,7 +182,14 @@
           <div class="c-grid"><div class="c-head" style="color:var(--red);">日</div><div class="c-head">月</div><div class="c-head">火</div><div class="c-head">水</div><div class="c-head">木</div><div class="c-head">金</div><div class="c-head" style="color:var(--primary);">土</div></div>
           <div class="c-grid" id="calendarGrid"></div>
         </div>
-        <div style="font-size:0.75rem; color:var(--sub); margin-top:4px;">💡 日付を押すとその日の予定を追加できます。</div>
+
+        <!-- 日付タップ時に下にリスト表示するエリア -->
+        <div id="dayEventsSection" style="background:#0b0f19; border:2px solid var(--border); border-radius:12px; padding:10px; display:flex; flex-direction:column; gap:8px;">
+          <div style="font-size:0.8rem; font-weight:bold; color:var(--primary); border-bottom:1px solid #27303f; padding-bottom:4px;" id="selectedDateTitle">📅 日付を選んでください</div>
+          <div id="selectedDateEventsList" style="display:flex; flex-direction:column; gap:6px; max-height:120px; overflow-y:auto;">
+            <span style="font-size:0.75rem; color:var(--sub);">予定はありません</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -287,6 +296,7 @@
     let mainCvs, mainCtx, fullCvs, fullCtx, viewCvs, viewCtx, replyCvs, replyCtx, fullReplyCvs, fullReplyCtx;
     let mainHistory = [], fullHistory = [], replyHistory = [], currentCleanPost = null;
     let currentCalDate = new Date();
+    let selectedDateStr = null;
     let isOlderPostsOpen = false;
     let isSyncing = false;
 
@@ -327,7 +337,17 @@
     }
     
     function updateAuthorDisplay() { 
-      document.getElementById('authorDisp').innerHTML = `<span style="color:${generateColorFromString(getDeviceId())};">${getUserName()}</span>`; 
+      const fullName = getUserName();
+      const deviceId = getDeviceId();
+      
+      // 新規メッセージ作成欄の著者表示
+      document.getElementById('authorDisp').innerHTML = `<span style="color:${generateColorFromString(deviceId)};">${fullName}</span>`; 
+      
+      // ヘッダー右上の名前変更ボタン表示を更新
+      const headerBtn = document.getElementById('headerNameBtn');
+      if (headerBtn) {
+        headerBtn.innerHTML = `👤 <span style="color:${generateColorFromString(deviceId)};">${fullName}</span>`;
+      }
     }
 
     function saveDraftData() { localStorage.setItem('V_DRAFT', JSON.stringify({ history: mainHistory, imgData: currentImgData })); }
@@ -563,6 +583,7 @@
               events = data.events;
               localStorage.setItem('V_EVTS', JSON.stringify(events));
               renderCalendar();
+              if (selectedDateStr) selectCalendarDate(selectedDateStr);
             }
             renderTimeline();
             hideLoading();
@@ -591,6 +612,7 @@
             events = data.events;
             localStorage.setItem('V_EVTS', JSON.stringify(events));
             renderCalendar();
+            if (selectedDateStr) selectCalendarDate(selectedDateStr);
           }
         }
         if (needsUpdate && !isSyncing) {
@@ -857,6 +879,11 @@
     function openCalendarModal() {
       document.getElementById('calModal').style.display = 'flex';
       renderCalendar();
+      if (!selectedDateStr) {
+        const now = new Date();
+        selectedDateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+      }
+      selectCalendarDate(selectedDateStr);
     }
 
     function changeMonth(direction) {
@@ -879,13 +906,52 @@
         let dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
         let hasEvent = events.some(e => e.date === dateStr);
         let isToday = (dateStr === todayStr);
-        gridHtml += `<div class="c-cell ${isToday ? 'today' : ''}" onclick="document.getElementById('eventDateInput').value='${dateStr}';openEventModal();">${day}${hasEvent ? '<div class="dot"></div>' : ''}</div>`;
+        let isSelected = (dateStr === selectedDateStr);
+        
+        let cellClass = 'c-cell';
+        if (isToday) cellClass += ' today';
+        if (isSelected) cellClass += ' selected';
+
+        gridHtml += `<div class="${cellClass}" onclick="selectCalendarDate('${dateStr}')">${day}${hasEvent ? '<div class="dot"></div>' : ''}</div>`;
       }
       document.getElementById('calendarGrid').innerHTML = gridHtml;
     }
 
+    function selectCalendarDate(dateStr) {
+      selectedDateStr = dateStr;
+      renderCalendar();
+      
+      const parts = dateStr.split('-');
+      document.getElementById('selectedDateTitle').innerText = `📅 ${parts[0]}年${Number(parts[1])}月${Number(parts[2])}日の予定`;
+      
+      const dayEvents = events.filter(e => e.date === dateStr);
+      const listEl = document.getElementById('selectedDateEventsList');
+      
+      if (dayEvents.length === 0) {
+        listEl.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:0.75rem; color:var(--sub);">予定はありません</span><button class="btn" style="padding:4px 8px; font-size:0.7rem; background:var(--primary); color:#000;" onclick="openEventModalForDate('${dateStr}')">＋ 追加</button></div>`;
+      } else {
+        let html = dayEvents.map(e => `
+          <div style="background:#020408; padding:6px 8px; border-radius:6px; font-size:0.75rem; display:flex; justify-content:space-between; align-items:center; border:1px solid #374151;">
+            <span style="color:var(--text); font-weight:bold;">• ${e.title}</span>
+            <button class="del" onclick="deleteEvent('${e.id}')">削除</button>
+          </div>
+        `).join('');
+        html += `<button class="btn" style="width:100%; margin-top:4px; padding:6px; font-size:0.75rem; background:var(--primary); color:#000;" onclick="openEventModalForDate('${dateStr}')">＋ この日に予定を追加</button>`;
+        listEl.innerHTML = html;
+      }
+    }
+
+    function openEventModalForDate(dateStr) {
+      document.getElementById('eventDateInput').value = dateStr;
+      document.getElementById('eventTitleInput').value = '';
+      openEventModal();
+    }
+
     function openEventModal() { 
       document.getElementById('evtModal').style.display = 'flex'; 
+      if (!document.getElementById('eventDateInput').value && selectedDateStr) {
+        document.getElementById('eventDateInput').value = selectedDateStr;
+      }
       renderEventList(); 
     }
     
@@ -897,6 +963,15 @@
       document.getElementById('eventTitleInput').value = '';
       renderEventList(); 
       renderCalendar();
+      if (selectedDateStr) selectCalendarDate(selectedDateStr);
+      persistDataAndSync();
+    }
+
+    function deleteEvent(eventId) {
+      events = events.filter(x => x.id !== eventId);
+      renderEventList();
+      renderCalendar();
+      if (selectedDateStr) selectCalendarDate(selectedDateStr);
       persistDataAndSync();
     }
 
@@ -904,14 +979,13 @@
       document.getElementById('eventListContainer').innerHTML = events.map(e => `
         <div style="background:#020408;padding:6px 8px;border-radius:6px;font-size:0.75rem;display:flex;justify-content:space-between;border:1px solid #374151;">
           <span>${e.date}: ${e.title}</span>
-          <button class="del" onclick="events=events.filter(x=>x.id!=='${e.id}');renderEventList();renderCalendar();persistDataAndSync();">削除</button>
+          <button class="del" onclick="deleteEvent('${e.id}')">削除</button>
         </div>`).join('');
     }
 
     function saveUserName() {
       let name = document.getElementById('nameInput').value.trim();
       if (name) {
-        let oldName = getUserName();
         localStorage.setItem('V_NAME', name);
         let newName = getUserName();
         
@@ -937,4 +1011,3 @@
   </script>
 </body>
 </html>
-
