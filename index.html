@@ -74,21 +74,26 @@
     .m-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
     .d-inp { background: #020408; border: 2px solid var(--border); color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; width: 100%; }
     
+    /* 5段の履歴が表示できるように最適化した電卓スタイル */
     .calc-box {
-      background: #0b0f19; border: 3px solid #4b5563; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 12px;
+      background: #0b0f19; border: 3px solid #4b5563; border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px;
     }
     .calc-screen {
-      background: #000000; border: 3px solid #6b7280; border-radius: 12px; padding: 14px 18px;
-      display: flex; flex-direction: column; align-items: flex-end; justify-content: center; min-height: 85px;
+      background: #000000; border: 3px solid #6b7280; border-radius: 12px; padding: 10px 14px;
+      display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-end; min-height: 120px;
       box-shadow: inset 0 3px 6px rgba(0,0,0,0.9);
     }
-    .calc-history { font-size: 0.9rem; color: #9ca3af; min-height: 20px; word-break: break-all; font-weight: bold; }
-    .calc-result { font-size: 2.2rem; font-weight: 900; color: #34d399; word-break: break-all; letter-spacing: 1px; }
-    .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .calc-history-list {
+      display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: right;
+      max-height: 75px; overflow-y: auto; margin-bottom: 4px;
+    }
+    .calc-history-row { font-size: 0.75rem; color: #9ca3af; word-break: break-all; }
+    .calc-result { font-size: 1.5rem; font-weight: 900; color: #34d399; word-break: break-all; letter-spacing: 0.5px; }
+    .calc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
     .calc-btn {
-      background: #1f2937; border: 2px solid #6b7280; border-radius: 12px; padding: 18px 0;
-      font-size: 1.3rem; font-weight: 900; color: #ffffff; cursor: pointer; text-align: center;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.4); transition: transform 0.05s ease, background 0.1s ease;
+      background: #1f2937; border: 2px solid #6b7280; border-radius: 10px; padding: 14px 0;
+      font-size: 1.15rem; font-weight: 900; color: #ffffff; cursor: pointer; text-align: center;
+      box-shadow: 0 3px 5px rgba(0,0,0,0.4); transition: transform 0.05s ease, background 0.1s ease;
     }
     .calc-btn:active { transform: scale(0.95); background: #374151; }
     .calc-btn.op { background: #1d4ed8; color: #ffffff; border-color: #60a5fa; }
@@ -175,7 +180,7 @@
     </div>
   </div>
 
-  <!-- 電卓モーダル -->
+  <!-- 電卓モーダル（履歴5段＆演算子上書き対応） -->
   <div class="modal" id="calcModal" onclick="closeModal('calcModal')">
     <div class="m-card" style="max-width:380px;" onclick="event.stopPropagation()">
       <div class="m-head">
@@ -185,7 +190,7 @@
       <div class="m-body" style="gap:10px;">
         <div class="calc-box">
           <div class="calc-screen">
-            <div class="calc-history" id="calcHistory"></div>
+            <div class="calc-history-list" id="calcHistoryList"></div>
             <div class="calc-result" id="calcDisplay">0</div>
           </div>
           <div class="calc-grid">
@@ -382,7 +387,7 @@
     let isSyncing = false;
 
     let calcExpression = "0";
-    let calcHistoryText = "";
+    let calcHistoryArray = []; // 最大5段の履歴を保持
 
     window.onload = () => {
       displayDateBanner();
@@ -457,19 +462,21 @@
 
     function openCalcModal() {
       calcExpression = "0";
-      calcHistoryText = "";
+      calcHistoryArray = [];
       updateCalcDisplay();
       openModal('calcModal');
     }
 
     function updateCalcDisplay() {
       document.getElementById('calcDisplay').innerText = calcExpression;
-      document.getElementById('calcHistory').innerText = calcHistoryText;
+      const historyListEl = document.getElementById('calcHistoryList');
+      historyListEl.innerHTML = calcHistoryArray.map(item => `<div class="calc-history-row">${item}</div>`).join('');
+      historyListEl.scrollTop = historyListEl.scrollHeight;
     }
 
     function calcClear() {
       calcExpression = "0";
-      calcHistoryText = "";
+      calcHistoryArray = [];
       updateCalcDisplay();
     }
 
@@ -483,27 +490,42 @@
     }
 
     function calcAppend(val) {
-      if (calcExpression === "0" && val !== '.') {
-        calcExpression = val;
+      const isOperator = ['+', '-', '×', '÷'].includes(val);
+      const lastChar = calcExpression.slice(-1);
+      const isLastCharOperator = ['+', '-', '×', '÷'].includes(lastChar);
+
+      if (isOperator && isLastCharOperator) {
+        // 演算子が連続した場合は、先に入力された方を削除して新しく入力された方を有効にする
+        calcExpression = calcExpression.slice(0, -1) + val;
       } else {
-        calcExpression += val;
+        if (calcExpression === "0" && !isOperator && val !== '.') {
+          calcExpression = val;
+        } else {
+          calcExpression += val;
+        }
       }
       updateCalcDisplay();
     }
 
     function calcCalculate() {
       try {
-        // 内部計算用に関数へ渡す際は「×」を「*」に、「÷」を「/」に変換する
         let sanitized = calcExpression.replace(/×/g, '*').replace(/÷/g, '/');
         let result = Function('"use strict";return (' + sanitized + ')')();
-        calcHistoryText = calcExpression + " =";
+        
+        let historyRow = calcExpression + " = " + result;
+        calcHistoryArray.push(historyRow);
+        if (calcHistoryArray.length > 5) {
+          calcHistoryArray.shift(); // 最大5段を保つため古いものを削除
+        }
+
         calcExpression = String(result);
         updateCalcDisplay();
       } catch (e) {
-        calcHistoryText = calcExpression;
+        calcHistoryArray.push(calcExpression + " (エラー)");
+        if (calcHistoryArray.length > 5) calcHistoryArray.shift();
         calcExpression = "エラー";
         updateCalcDisplay();
-        setTimeout(() => { calcExpression = "0"; calcHistoryText = ""; updateCalcDisplay(); }, 1200);
+        setTimeout(() => { calcExpression = "0"; updateCalcDisplay(); }, 1200);
       }
     }
 
@@ -1176,4 +1198,3 @@
   </script>
 </body>
 </html>
-
