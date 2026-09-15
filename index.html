@@ -26,7 +26,6 @@
     
     .card { background: var(--card); border: 3px solid var(--card-border); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.5); }
     
-    /* 新規投稿エリア：太い緑の枠と緑系背景 */
     .new-post-card {
       background: linear-gradient(145deg, #06241b, #03110c);
       border: 4px solid var(--primary);
@@ -55,7 +54,7 @@
     .post { background: #172033; border: 3px solid #4b5563; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.4); }
     .p-head { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--sub); border-bottom: 2px solid #27303f; padding-bottom: 6px; align-items: center; }
     .p-body { background: #020408; border-radius: 10px; height: 120px; width: 100%; position: relative; overflow: hidden; border: 2px solid rgba(16,185,129,0.5); cursor: pointer; }
-    .p-body::after { content: '🔍 拡大・保存'; position: absolute; bottom: 6px; right: 8px; background: rgba(0,0,0,0.8); color: #34d399; font-size: 0.65rem; padding: 3px 8px; border-radius: 6px; z-index: 3; font-weight: bold; border: 1px solid rgba(52,211,153,0.3); }
+    .p-body::after { content: '拡大・保存'; position: absolute; bottom: 6px; right: 8px; background: rgba(0,0,0,0.8); color: #34d399; font-size: 0.65rem; padding: 3px 8px; border-radius: 6px; z-index: 3; font-weight: bold; border: 1px solid rgba(52,211,153,0.3); }
     
     .r-bar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
     .r-btn { background: #1f2937; border: 2px solid var(--border); border-radius: 10px; padding: 4px 9px; font-size: 0.75rem; color: var(--text); cursor: pointer; display: flex; gap: 4px; align-items: center; }
@@ -75,7 +74,6 @@
     .m-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
     .d-inp { background: #020408; border: 2px solid var(--border); color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; width: 100%; }
     
-    /* より見やすい洗練された電卓スタイル */
     .calc-box {
       background: #0b0f19; border: 3px solid #374151; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 12px;
     }
@@ -97,7 +95,6 @@
     .calc-btn.act { background: #7f1d1d; color: #fca5a5; border-color: #ef4444; }
     .calc-btn.eq { background: #065f46; color: #6ee7b7; border-color: #10b981; }
 
-    /* 共通ローディングオーバーレイ */
     #loadingOverlay { display: none; position: fixed; inset: 0; background: rgba(3,7,18,0.25); z-index: 30000; justify-content: center; align-items: center; pointer-events: none; }
     .loading-box { 
       background: linear-gradient(145deg, #111827, #06241b); 
@@ -120,13 +117,11 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* スクショ専用クリーン表示モード用 */
     #cleanScreenModal { display: none; position: fixed; inset: 0; background: #000000; z-index: 20000; justify-content: center; align-items: center; padding: 0; }
     #cleanScreenModal .clean-wrap { position: relative; width: 100vw; height: 100dvh; display: flex; justify-content: center; align-items: center; background: #000; }
     #cleanScreenModal img { width: 100% !important; height: 100% !important; object-fit: contain; position: absolute; inset: 0; z-index: 1; }
     .close-clean-btn { position: fixed; top: 15px; right: 15px; background: rgba(0,0,0,0.7); color: white; border: 2px solid #fff; border-radius: 50%; width: 40px; height: 40px; font-weight: bold; font-size: 1rem; cursor: pointer; z-index: 20001; display: flex; justify-content: center; align-items: center; }
 
-    /* カレンダーポップアップ内専用の白い囲みグリッド */
     .cal-sec-modal { display: flex; flex-direction: column; gap: 10px; border: 2px solid #ffffff; border-radius: 14px; padding: 12px; background: #0b0f19; }
     .c-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 0.8rem; width: 100%; }
     .c-head { font-weight: bold; color: var(--sub); padding: 4px 0; }
@@ -138,11 +133,10 @@
 </head>
 <body>
 
-  <!-- 投稿中・削除中ポップアップ -->
   <div id="loadingOverlay">
     <div class="loading-box">
       <div class="spinner"></div>
-      <div id="loadingText" style="font-size: 1.05rem; font-weight: 900; color: var(--primary); letter-spacing: 0.5px;">⏳ 投稿中...</div>
+      <div id="loadingText" style="font-size: 1.05rem; font-weight: 900; color: var(--primary); letter-spacing: 0.5px;">投稿中...</div>
     </div>
   </div>
 
@@ -150,22 +144,21 @@
     <header>
       <div class="brand">VIL CANVAS</div>
       <div class="btns">
-        <button class="ibtn" onclick="openCalcModal()" style="border-color:var(--reply); color:var(--reply);">🧮 電卓</button>
-        <button class="ibtn" onclick="openCalendarModal()" style="border-color:var(--primary); color:var(--primary);">📅 カレンダー</button>
+        <button class="ibtn" onclick="openCalcModal()" style="border-color:var(--reply); color:var(--reply);">電卓</button>
+        <button class="ibtn" onclick="openCalendarModal()" style="border-color:var(--primary); color:var(--primary);">カレンダー</button>
         <button class="ibtn" id="headerNameBtn" onclick="openProfileModal()" style="border-color:var(--border); font-size:0.7rem; font-weight:bold;"></button>
       </div>
     </header>
 
-    <div class="date-banner" id="todayDateBanner">📅 読み込み中...</div>
+    <div class="date-banner" id="todayDateBanner">読み込み中...</div>
 
     <div class="main">
-      <!-- 新規投稿セクション -->
       <section class="card new-post-card">
-        <div class="c-title"><span>✍️ 新規メッセージ・写真作成</span><span id="authorDisp" style="font-size:0.75rem; color:var(--sub);"></span></div>
+        <div class="c-title"><span>新規メッセージ・写真作成</span><span id="authorDisp" style="font-size:0.75rem; color:var(--sub);"></span></div>
         <div class="c-wrap" id="mWrap"><img id="mBg" class="bg-img" style="display:none;"><canvas id="mCvs"></canvas></div>
-        <div class="note">ℹ️ 画像は自動最適化されます。</div>
+        <div class="note">画像は自動最適化されます。</div>
         <div class="tools">
-          <label class="btn" style="cursor:pointer;">📷 画像<input type="file" accept="image/*" style="display:none;" onchange="handleImageSelect(event)"></label>
+          <label class="btn" style="cursor:pointer;">画像選択<input type="file" accept="image/*" style="display:none;" onchange="handleImageSelect(event)"></label>
           <button class="btn" id="eraseBtn" onclick="toggleEraseMode()">消しゴム</button>
           <button class="btn" onclick="openFullscreenModal()">全画面</button>
           <button class="btn" onclick="clearCanvas()">クリア</button>
@@ -175,18 +168,18 @@
 
       <section class="card">
         <div class="c-title">
-          <span>💬 タイムライン</span>
+          <span>タイムライン</span>
         </div>
         <div id="timeline" style="display:flex; flex-direction:column; gap:12px;"></div>
       </section>
     </div>
   </div>
 
-  <!-- 電卓モーダル（視認性向上・計算式表示付き） -->
+  <!-- 電卓モーダル -->
   <div class="modal" id="calcModal" onclick="closeModal('calcModal')">
     <div class="m-card" style="max-width:360px;" onclick="event.stopPropagation()">
       <div class="m-head">
-        <span>🧮 かんたん電卓</span>
+        <span>電卓</span>
         <button class="ibtn" onclick="closeModal('calcModal')">✕</button>
       </div>
       <div class="m-body" style="gap:10px;">
@@ -224,7 +217,7 @@
   <div class="modal" id="profileModal" onclick="closeModal('profileModal')">
     <div class="m-card" style="max-width:360px;" onclick="event.stopPropagation()">
       <div class="m-head">
-        <span>👤 マイプロフィール・設定</span>
+        <span>マイプロフィール・設定</span>
         <button class="ibtn" onclick="closeModal('profileModal')">✕</button>
       </div>
       <div class="m-body" style="gap:14px;">
@@ -244,8 +237,8 @@
         </div>
 
         <div style="display:flex; flex-direction:column; gap:8px;">
-          <button class="btn" style="background:var(--primary); color:#000; padding:10px; font-weight:bold;" onclick="closeModal('profileModal'); openModal('nameModal'); document.getElementById('nameInput').value=localStorage.getItem('V_NAME')||'';">✏️ 名前を変更する</button>
-          <button class="btn" style="background:rgba(239,68,68,0.2); color:var(--red); border-color:var(--red); padding:10px; font-weight:bold;" onclick="deleteAllMyPosts()">🗑️ 自分の投稿をすべて一括削除</button>
+          <button class="btn" style="background:var(--primary); color:#000; padding:10px; font-weight:bold;" onclick="closeModal('profileModal'); openModal('nameModal'); document.getElementById('nameInput').value=localStorage.getItem('V_NAME')||'';">名前を変更する</button>
+          <button class="btn" style="background:rgba(239,68,68,0.2); color:var(--red); border-color:var(--red); padding:10px; font-weight:bold;" onclick="deleteAllMyPosts()">自分の投稿をすべて一括削除</button>
         </div>
       </div>
     </div>
@@ -255,7 +248,7 @@
   <div class="modal" id="calModal" onclick="closeModal('calModal')">
     <div class="m-card" style="max-width:440px;" onclick="event.stopPropagation()">
       <div class="m-head">
-        <span>📅 カレンダー・予定管理</span>
+        <span>カレンダー・予定管理</span>
         <button class="ibtn" onclick="closeModal('calModal')">✕</button>
       </div>
       <div class="m-body">
@@ -273,7 +266,7 @@
         </div>
 
         <div id="dayEventsSection" style="background:#0b0f19; border:2px solid var(--border); border-radius:12px; padding:10px; display:flex; flex-direction:column; gap:8px;">
-          <div style="font-size:0.8rem; font-weight:bold; color:var(--primary); border-bottom:1px solid #27303f; padding-bottom:4px;" id="selectedDateTitle">📅 日付を選んでください</div>
+          <div style="font-size:0.8rem; font-weight:bold; color:var(--primary); border-bottom:1px solid #27303f; padding-bottom:4px;" id="selectedDateTitle">日付を選んでください</div>
           <div id="selectedDateEventsList" style="display:flex; flex-direction:column; gap:6px; max-height:120px; overflow-y:auto;">
             <span style="font-size:0.75rem; color:var(--sub);">予定はありません</span>
           </div>
@@ -288,14 +281,14 @@
       <div class="m-head"><span id="viewModalTitle">拡大表示</span><button class="ibtn" onclick="closeModal('viewModal')">✕</button></div>
       <div class="c-wrap" id="viewWrap" style="flex:1; height:auto;"><img id="viewBgImg" class="bg-img" style="display:none;"><canvas id="viewCvs"></canvas></div>
       <div class="tools" style="flex-wrap:wrap; gap:8px;">
-        <button class="btn" id="viewReplayBtn" style="background:var(--primary); color:#000;">▶ 手書き文字再生</button>
-        <button class="btn" id="cleanScreenBtn" style="background:var(--reply); color:white; display:none;" onclick="openCleanScreenForScreenshot()">🖼️ 写真のみ表示（スクショ用）</button>
+        <button class="btn" id="viewReplayBtn" style="background:var(--primary); color:#000;">手書き文字再生</button>
+        <button class="btn" id="cleanScreenBtn" style="background:var(--reply); color:white; display:none;" onclick="openCleanScreenForScreenshot()">写真のみ表示（スクショ用）</button>
         <button class="btn" onclick="closeModal('viewModal')" style="margin-left:auto;">閉じる</button>
       </div>
     </div>
   </div>
 
-  <!-- スクリーンショット専用クリーン表示モード（写真のみ） -->
+  <!-- スクリーンショット専用クリーン表示モード -->
   <div id="cleanScreenModal">
     <button class="close-clean-btn" onclick="closeCleanScreen()">✕</button>
     <div class="clean-wrap" id="cleanWrap">
@@ -306,7 +299,7 @@
   <!-- 全画面入力用（新規投稿用） -->
   <div class="modal" id="fullModal">
     <div class="card full-modal">
-      <div class="m-head"><span>⛶ 全画面入力</span><button class="ibtn" onclick="closeFullscreenModal()">✓ 完了</button></div>
+      <div class="m-head"><span>全画面入力</span><button class="ibtn" onclick="closeFullscreenModal()">完了</button></div>
       <div class="c-wrap" id="fullWrap" style="flex:1; height:auto;"><img id="fullBgImg" class="bg-img" style="display:none;"><canvas id="fullCvs"></canvas></div>
       <div class="tools">
         <button class="btn" id="fullEraseBtn" onclick="toggleEraseMode()">消しゴム</button>
@@ -320,13 +313,13 @@
   <div class="modal" id="fullReplyModal">
     <div class="card full-modal" style="background:var(--card); display:flex; flex-direction:column; padding:10px; gap:10px;">
       <div class="m-head">
-        <span style="color:var(--reply);">⛶ 返信の全画面入力</span>
-        <button class="ibtn" onclick="closeFullReplyModalOnly()">✕ 戻る</button>
+        <span style="color:var(--reply);">返信の全画面入力</span>
+        <button class="ibtn" onclick="closeFullReplyModalOnly()">戻る</button>
       </div>
       <div class="c-wrap" id="fullReplyWrap" style="flex:1; height:auto; border-color:var(--reply);"><canvas id="fullReplyCvs"></canvas></div>
       <div class="tools">
         <button class="btn" onclick="if(fullReplyCtx && fullReplyCvs) { fullReplyCtx.clearRect(0,0,fullReplyCvs.width,fullReplyCvs.height); replyHistory=[]; }">クリア</button>
-        <button class="sbtn" style="background:var(--reply); color:white;" onclick="submitFullReplyAndFinish()">✓ 完了して返信する</button>
+        <button class="sbtn" style="background:var(--reply); color:white;" onclick="submitFullReplyAndFinish()">完了して返信する</button>
       </div>
     </div>
   </div>
@@ -334,20 +327,20 @@
   <!-- 返信モーダル -->
   <div class="modal" id="repModal">
     <div class="m-card" style="max-width:380px;">
-      <div class="m-head"><span style="color:var(--reply);">💬 返信コメント作成</span><button class="ibtn" onclick="closeModal('repModal')">✕</button></div>
+      <div class="m-head"><span style="color:var(--reply);">返信コメント作成</span><button class="ibtn" onclick="closeModal('repModal')">✕</button></div>
       <div class="m-body">
         <div style="display:flex; gap:6px;">
           <input type="text" id="replyTextInp" class="d-inp" placeholder="テキストで返信">
           <button class="btn" style="background:var(--reply); color:white; border:none;" onclick="submitTextReply()">送信</button>
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
-          <span style="font-size:0.75rem; color:var(--reply); font-weight:bold;">手書きで返信 (ブルー):</span>
-          <button class="btn" style="background:var(--reply); color:white; padding:4px 8px; font-size:0.7rem;" onclick="openFullReplyModalFromRepModal()">⛶ 全画面で書く</button>
+          <span style="font-size:0.75rem; color:var(--reply); font-weight:bold;">手書きで返信:</span>
+          <button class="btn" style="background:var(--reply); color:white; padding:4px 8px; font-size:0.7rem;" onclick="openFullReplyModalFromRepModal()">全画面で書く</button>
         </div>
         <div class="c-wrap" style="height:110px; border-color:var(--reply);" id="replyWrap"><canvas id="replyCvs"></canvas></div>
         <div class="tools">
           <button class="btn" onclick="replyCtx.clearRect(0,0,replyCvs.width,replyCvs.height); replyHistory=[];">クリア</button>
-          <button class="btn" style="background:var(--reply); color:white;" onclick="playAnimation('replyCvs', replyHistory, '#3b82f6')">▶ プレビュー</button>
+          <button class="btn" style="background:var(--reply); color:white;" onclick="playAnimation('replyCvs', replyHistory, '#3b82f6')">プレビュー</button>
           <button class="sbtn" style="background:var(--reply); color:white;" onclick="submitDrawReply()">手書き送信</button>
         </div>
       </div>
@@ -388,7 +381,6 @@
     let isOlderPostsOpen = false;
     let isSyncing = false;
 
-    // 電卓用変数
     let calcExpression = "0";
     let calcHistoryText = "";
 
@@ -408,7 +400,7 @@
     function displayDateBanner() {
       const now = new Date();
       const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
-      document.getElementById('todayDateBanner').innerHTML = `<span>📅 ${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} (${weekdays[now.getDay()]})</span><span>🕒 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span>`;
+      document.getElementById('todayDateBanner').innerHTML = `<span>${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} (${weekdays[now.getDay()]})</span><span>${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}</span>`;
     }
 
     function getDeviceId() {
@@ -434,7 +426,7 @@
       document.getElementById('authorDisp').innerHTML = `<span style="color:${generateColorFromString(deviceId)};">${fullName}</span>`; 
       const headerBtn = document.getElementById('headerNameBtn');
       if (headerBtn) {
-        headerBtn.innerHTML = `👤 <span style="color:${generateColorFromString(deviceId)};">${fullName}</span>`;
+        headerBtn.innerHTML = `<span style="color:${generateColorFromString(deviceId)};">${fullName}</span>`;
       }
     }
 
@@ -455,7 +447,7 @@
         return;
       }
       if (confirm(`あなたが投稿した ${myPostsCount} 件の投稿をすべて一括削除しますか？`)) {
-        showLoading('🗑️ 削除中...');
+        showLoading('削除中...');
         posts = posts.filter(p => p.uid !== myId);
         renderTimeline();
         closeModal('profileModal');
@@ -463,7 +455,6 @@
       }
     }
 
-    /* 改良版電卓の機能 */
     function openCalcModal() {
       calcExpression = "0";
       calcHistoryText = "";
@@ -711,7 +702,7 @@
       submitDrawReply();
     }
 
-    function showLoading(text = '⏳ 投稿中...') {
+    function showLoading(text = '投稿中...') {
       document.getElementById('loadingText').innerText = text;
       document.getElementById('loadingOverlay').style.display = 'flex';
       isSyncing = true;
@@ -796,7 +787,7 @@
 
     function submitPost() {
       if (mainHistory.length === 0 && !currentImgData) { alert('入力してください'); return; }
-      showLoading('⏳ 投稿中...');
+      showLoading('投稿中...');
       const now = new Date();
       posts.unshift({
         id: 'P_' + Date.now(),
@@ -894,10 +885,10 @@
           ${makeReactBtn('👍')}
           ${makeReactBtn('👌')}
           ${makeReactBtn('🙏')}
-          <button class="r-btn" onclick="openReplyModal('${post.id}')" style="color:var(--reply); border-color:#2a4365; margin-left:auto;">💬 返信</button>
+          <button class="r-btn" onclick="openReplyModal('${post.id}')" style="color:var(--reply); border-color:#2a4365; margin-left:auto;">返信</button>
         </div>
         ${replies.length > 0 ? `
-          <button class="toggle-rep" onclick="toggleReplies('${post.id}')">💬 コメント (${replies.length}件)</button>
+          <button class="toggle-rep" onclick="toggleReplies('${post.id}')">コメント (${replies.length}件)</button>
           <div class="reps" id="reps_${post.id}">${repliesHtml}</div>
         ` : ''}
       </div>`;
@@ -915,7 +906,7 @@
       if (olderPosts.length > 0) {
         html += `
           <button class="toggle-rep" style="background:#1f2937; border:2px solid var(--border); text-align:center; padding:10px; font-weight:bold; color:var(--text); margin-top:6px;" onclick="toggleOlderPosts()">
-            ${isOlderPostsOpen ? '▲ 過去の投稿を折りたたむ' : `▼ 過去の投稿をもっと見る (${olderPosts.length}件)`}
+            ${isOlderPostsOpen ? '過去の投稿を折りたたむ' : `過去の投稿をもっと見る (${olderPosts.length}件)`}
           </button>
           <div id="olderPostsContainer" style="display:${isOlderPostsOpen ? 'flex' : 'none'}; flex-direction:column; gap:12px; margin-top:6px;">
             ${olderPosts.map(post => renderPostItem(post)).join('')}
@@ -1049,7 +1040,6 @@
       }
     }
 
-    /* Calendar */
     function openCalendarModal() {
       document.getElementById('calModal').style.display = 'flex';
       renderCalendar();
@@ -1096,13 +1086,13 @@
       renderCalendar();
       
       const parts = dateStr.split('-');
-      document.getElementById('selectedDateTitle').innerText = `📅 ${parts[0]}年${Number(parts[1])}月${Number(parts[2])}日の予定`;
+      document.getElementById('selectedDateTitle').innerText = `${parts[0]}年${Number(parts[1])}月${Number(parts[2])}日の予定`;
       
       const dayEvents = events.filter(e => e.date === dateStr);
       const listEl = document.getElementById('selectedDateEventsList');
       
       if (dayEvents.length === 0) {
-        listEl.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:0.75rem; color:var(--sub);">予定はありません</span><button class="btn" style="padding:4px 8px; font-size:0.7rem; background:var(--primary); color:#000;" onclick="openEventModalForDate('${dateStr}')">＋ 追加</button></div>`;
+        listEl.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:0.75rem; color:var(--sub);">予定はありません</span><button class="btn" style="padding:4px 8px; font-size:0.7rem; background:var(--primary); color:#000;" onclick="openEventModalForDate('${dateStr}')">追加</button></div>`;
       } else {
         let html = dayEvents.map(e => `
           <div style="background:#020408; padding:6px 8px; border-radius:6px; font-size:0.75rem; display:flex; justify-content:space-between; align-items:center; border:1px solid #374151;">
@@ -1110,7 +1100,7 @@
             <button class="del" onclick="deleteEvent('${e.id}')">削除</button>
           </div>
         `).join('');
-        html += `<button class="btn" style="width:100%; margin-top:4px; padding:6px; font-size:0.75rem; background:var(--primary); color:#000;" onclick="openEventModalForDate('${dateStr}')">＋ この日に予定を追加</button>`;
+        html += `<button class="btn" style="width:100%; margin-top:4px; padding:6px; font-size:0.75rem; background:var(--primary); color:#000;" onclick="openEventModalForDate('${dateStr}')">この日に予定を追加</button>`;
         listEl.innerHTML = html;
       }
     }
@@ -1164,14 +1154,14 @@
         let newName = getUserName();
         
         const myId = getDeviceId();
-        posts.forEach(p =>.padStart?.(2, '0') // syntax safe
+        posts.forEach(p => {
           if (p.uid === myId) p.author = newName;
           if (p.replies) {
             p.replies.forEach(r => {
               if (r.uid === myId) r.author = newName;
             });
           }
-        );
+        });
         
         updateAuthorDisplay();
         renderTimeline();
