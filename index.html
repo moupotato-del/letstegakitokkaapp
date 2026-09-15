@@ -6,7 +6,7 @@
   <title>VIL CANVAS</title>
   <style>
     :root {
-      --bg: #030712; --card: #111827; --card-border: #374151; --primary: #10b981; --text: #f9fafb; --sub: #9ca3af; --border: #4b5563; --red: #ef4444; --reply: #3b82f6;
+      --bg: #030712; --card: #111827; --card-border: #374151; --primary: #10b981; --text: #f9fafb; --sub: #9ca3af; --border: #4b5563; --red: #ef4444; --reply: #3b82f6; --did-color: #6b7280;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
     html, body { width: 100%; height: 100%; height: 100dvh; overflow: hidden; background: var(--bg); color: var(--text); font-family: sans-serif; }
@@ -74,7 +74,6 @@
     .m-body { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
     .d-inp { background: #020408; border: 2px solid var(--border); color: white; padding: 10px; border-radius: 8px; font-size: 0.9rem; width: 100%; }
     
-    /* 5段の履歴が表示できるように最適化した電卓スタイル */
     .calc-box {
       background: #0b0f19; border: 3px solid #4b5563; border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px;
     }
@@ -180,7 +179,7 @@
     </div>
   </div>
 
-  <!-- 電卓モーダル（履歴5段＆演算子上書き対応） -->
+  <!-- 電卓モーダル -->
   <div class="modal" id="calcModal" onclick="closeModal('calcModal')">
     <div class="m-card" style="max-width:380px;" onclick="event.stopPropagation()">
       <div class="m-head">
@@ -233,7 +232,7 @@
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <span style="font-size:0.75rem; color:var(--sub);">デバイスID:</span>
-            <span id="pfDid" style="font-size:0.8rem; font-family:monospace; color:var(--reply);">--</span>
+            <span id="pfDid" style="font-size:0.8rem; font-family:monospace; color:var(--did-color);">--</span>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <span style="font-size:0.75rem; color:var(--sub);">総投稿数:</span>
@@ -334,19 +333,16 @@
     <div class="m-card" style="max-width:380px;">
       <div class="m-head"><span style="color:var(--reply);">返信コメント作成</span><button class="ibtn" onclick="closeModal('repModal')">✕</button></div>
       <div class="m-body">
-        <div style="display:flex; gap:6px;">
-          <input type="text" id="replyTextInp" class="d-inp" placeholder="テキストで返信">
-          <button class="btn" style="background:var(--reply); color:white; border:none;" onclick="submitTextReply()">送信</button>
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
-          <span style="font-size:0.75rem; color:var(--reply); font-weight:bold;">手書きで返信:</span>
+        <input type="text" id="replyTextInp" class="d-inp" placeholder="テキストで返信">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:2px;">
+          <span style="font-size:0.75rem; color:var(--reply); font-weight:bold;">手書きで返信（オプション）:</span>
           <button class="btn" style="background:var(--reply); color:white; padding:4px 8px; font-size:0.7rem;" onclick="openFullReplyModalFromRepModal()">全画面で書く</button>
         </div>
         <div class="c-wrap" style="height:110px; border-color:var(--reply);" id="replyWrap"><canvas id="replyCvs"></canvas></div>
         <div class="tools">
           <button class="btn" onclick="replyCtx.clearRect(0,0,replyCvs.width,replyCvs.height); replyHistory=[];">クリア</button>
           <button class="btn" style="background:var(--reply); color:white;" onclick="playAnimation('replyCvs', replyHistory, '#3b82f6')">プレビュー</button>
-          <button class="sbtn" style="background:var(--reply); color:white;" onclick="submitDrawReply()">手書き送信</button>
+          <button class="sbtn" style="background:var(--reply); color:white;" onclick="submitReply()">送信</button>
         </div>
       </div>
     </div>
@@ -387,7 +383,7 @@
     let isSyncing = false;
 
     let calcExpression = "0";
-    let calcHistoryArray = []; // 最大5段の履歴を保持
+    let calcHistoryArray = [];
 
     window.onload = () => {
       displayDateBanner();
@@ -414,24 +410,16 @@
       return id;
     }
 
-    function generateColorFromString(str) {
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-      return `hsl(${Math.abs(hash) % 360}, 85%, 65%)`;
-    }
-
     function getUserName() { 
       let baseName = localStorage.getItem('V_NAME') || '名無し';
-      return `${baseName} (${getDeviceId()})`; 
+      return `${baseName} <span style="color:var(--did-color); font-weight:normal; font-size:0.7rem;">(ID:${getDeviceId()})</span>`; 
     }
     
     function updateAuthorDisplay() { 
-      const fullName = getUserName();
-      const deviceId = getDeviceId();
-      document.getElementById('authorDisp').innerHTML = `<span style="color:${generateColorFromString(deviceId)};">${fullName}</span>`; 
+      document.getElementById('authorDisp').innerHTML = getUserName(); 
       const headerBtn = document.getElementById('headerNameBtn');
       if (headerBtn) {
-        headerBtn.innerHTML = `<span style="color:${generateColorFromString(deviceId)};">${fullName}</span>`;
+        headerBtn.innerHTML = getUserName();
       }
     }
 
@@ -495,7 +483,6 @@
       const isLastCharOperator = ['+', '-', '×', '÷'].includes(lastChar);
 
       if (isOperator && isLastCharOperator) {
-        // 演算子が連続した場合は、先に入力された方を削除して新しく入力された方を有効にする
         calcExpression = calcExpression.slice(0, -1) + val;
       } else {
         if (calcExpression === "0" && !isOperator && val !== '.') {
@@ -515,7 +502,7 @@
         let historyRow = calcExpression + " = " + result;
         calcHistoryArray.push(historyRow);
         if (calcHistoryArray.length > 5) {
-          calcHistoryArray.shift(); // 最大5段を保つため古いものを削除
+          calcHistoryArray.shift();
         }
 
         calcExpression = String(result);
@@ -722,7 +709,7 @@
     function submitFullReplyAndFinish() {
       if (replyHistory.length === 0) { alert('手書きしてください'); return; }
       document.getElementById('fullReplyModal').style.display = 'none';
-      submitDrawReply();
+      submitReply();
     }
 
     function showLoading(text = '投稿中...') {
@@ -882,19 +869,20 @@
       const repliesHtml = replies.map(rep => {
         const isMyReply = rep.uid === myId;
         const repCvsId = 'rcvs_' + rep.id;
-        if (rep.strokes) setTimeout(() => playAnimation(repCvsId, rep.strokes, '#3b82f6'), 50);
+        if (rep.strokes && rep.strokes.length > 0) setTimeout(() => playAnimation(repCvsId, rep.strokes, '#3b82f6'), 50);
         return `<div class="rep-item">
           <div style="display:flex; justify-content:space-between; font-size:0.65rem; opacity:0.8;">
-            <span><strong style="color:${generateColorFromString(rep.uid)};">${rep.author}</strong> (${rep.time})</span>
+            <span><strong>${rep.author}</strong> (${rep.time})</span>
             ${isMyReply ? `<button class="del" onclick="deleteReply('${post.id}','${rep.id}')">削除</button>` : ''}
           </div>
-          ${rep.strokes ? `<div style="height:60px;position:relative;background:#020408;border-radius:6px;margin-top:2px;"><canvas id="${repCvsId}"></canvas></div>` : `<div style="color:#60a5fa;margin-top:2px;">${rep.text}</div>`}
+          ${rep.strokes && rep.strokes.length > 0 ? `<div style="height:60px;position:relative;background:#020408;border-radius:6px;margin-top:2px;"><canvas id="${repCvsId}"></canvas></div>` : ''}
+          ${rep.text ? `<div style="color:#60a5fa;margin-top:2px; word-break:break-all;">${rep.text}</div>` : ''}
         </div>`;
       }).join('');
 
       return `<div class="post">
         <div class="p-head">
-          <span style="font-weight:bold; color:${generateColorFromString(post.uid)};">${post.author}</span>
+          <span style="font-weight:bold;">${post.author}</span>
           <div style="display:flex; align-items:center; gap:8px;">
             <span style="color:var(--primary); font-weight:bold;">${getTimeAgo(post.ts)}</span>
             <span style="color:var(--sub); font-size:0.7rem;">(${post.time})</span>
@@ -981,26 +969,21 @@
       }, 50);
     }
 
-    function submitTextReply() {
-      const txt = document.getElementById('replyTextInp').value.trim(); if (!txt) return;
+    function submitReply() {
+      const txt = document.getElementById('replyTextInp').value.trim();
+      if (replyHistory.length === 0 && !txt) { alert('テキストまたは手書きを入力してください'); return; }
       const post = posts.find(x => x.id === activeReplyPostId);
       if (post) {
         if (!post.replies) post.replies = [];
         const now = new Date();
-        post.replies.push({ id: 'R_' + Date.now(), author: getUserName(), uid: getDeviceId(), time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`, text: txt });
-        renderTimeline();
-        closeModal('repModal');
-        persistDataAndSync(); 
-      }
-    }
-
-    function submitDrawReply() {
-      if (replyHistory.length === 0) { alert('手書きしてください'); return; }
-      const post = posts.find(x => x.id === activeReplyPostId);
-      if (post) {
-        if (!post.replies) post.replies = [];
-        const now = new Date();
-        post.replies.push({ id: 'R_' + Date.now(), author: getUserName(), uid: getDeviceId(), time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`, strokes: replyHistory });
+        post.replies.push({ 
+          id: 'R_' + Date.now(), 
+          author: getUserName(), 
+          uid: getDeviceId(), 
+          time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`, 
+          text: txt,
+          strokes: replyHistory 
+        });
         renderTimeline();
         closeModal('repModal'); 
         persistDataAndSync(); 
@@ -1021,7 +1004,7 @@
     function openViewModal(id) {
       const post = posts.find(x => x.id === id); if (!post) return;
       currentCleanPost = post;
-      document.getElementById('viewModalTitle').innerText = `${post.author} さんの投稿`;
+      document.getElementById('viewModalTitle').innerHTML = `${post.author} さんの投稿`;
       document.getElementById('viewModal').style.display = 'flex';
 
       let cleanBtn = document.getElementById('cleanScreenBtn');
